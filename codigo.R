@@ -9,9 +9,3 @@ df <- readr::read_csv('worldDevelopmentIndicators.csv') |>
   mutate(x = (x-min(x))/(max(x)-min(x))) ## ITEM 1: Normalizando covariavel
 
 ## ITEM 2
-
-lista_modelos <- list()
-
-for (p in 1:30) {
-
-}
