@@ -1,0 +1,49 @@
+---
+title: "Lista 1 - Mineração"
+author: 
+  - "Victor Alves Dogo Martins, RA: 744878"
+  - "Ana Beatriz Alves Monteiro, RA: 727838"
+  - "Larissa Torres, RA: 631914"
+output: pdf_document
+date: "03-07-2022"
+---
+
+```{r setup, include=FALSE}
+# Opções globais para os chunks de códigos
+
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
+                      fig.align="center",
+                      fig.pos = "H", out.width = "65%",
+                      error=FALSE)
+```
+
+# Item 1
+
+```{r}
+
+### Carregando Pacotes
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+
+# Lendo dados
+
+df <- readr::read_csv('worldDevelopmentIndicators.csv') |>
+  select(-CountryName) |>
+  rename(y=LifeExpectancy,
+         x=GDPercapita) |>
+  mutate(x = (x-min(x))/(max(x)-min(x)))
+
+# Mostrando dados
+
+head(df) |> 
+  kable('latex',digits=4, align='cc',
+        caption = 'Primeiras linhas do banco de dados após normalização') |> 
+  kable_styling(position="center",
+                latex_options="HOLD_position")
+
+
+
+```
+
