@@ -19,6 +19,14 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
 
 # Item 1
 
+Como orientado no enunciado deste item, foi feita a normalização da covariável 'PIB per capita' através da seguinte fórmula:
+
+$$
+\frac{x - x_{min}}{x_{max} - x_{min}}
+$$
+
+Computacionalmente, esse procedimento foi feito através do comando `mutate` abaixo, onde temos o comentário `# Normalizando a covariavel`. Além disso, também segue uma parcela do banco de dados após a normalização para fins de demonstração:
+
 ```{r}
 
 ### Carregando Pacotes
@@ -33,7 +41,7 @@ df <- readr::read_csv('worldDevelopmentIndicators.csv') |>
   select(-CountryName) |>
   rename(y=LifeExpectancy,
          x=GDPercapita) |>
-  mutate(x = (x-min(x))/(max(x)-min(x)))
+  mutate(x = (x-min(x))/(max(x)-min(x))) # Normalizando a covariavel
 
 # Mostrando dados
 
@@ -46,5 +54,3 @@ head(df) |>
 
 
 ```
-
-ff
