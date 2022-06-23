@@ -59,14 +59,23 @@ head(df) |>
 
 ```{r}
 
+# Criando lista com formulas de g(x) para cada valor de p
 
 formulas <- list()
 
 for (p in 1:30) {
 
   if(p==1){
+    
+    # Se p for igual a 1, a expressao mantem-se da forma abaixo
+    
     formulas[[p]] <- "y~sin(2*pi*x)+cos(2*pi*x)"
   } else {
+    
+    # Para cada p maior do que 1, sua expressao g(x) sera dada pela expressao
+    # do p anterior MAIS os seno e cosseno de 2*pi*x vezes o valor de p da
+    # iteracao atual
+    
     formulas[[p]] <- paste0(formulas[[p-1]],
                              "+sin(2*",p,
                              "*pi*x)+cos(2*",
@@ -74,12 +83,15 @@ for (p in 1:30) {
   }
 }
 
+# Definido tibble para guardarmos estimativas do risco das regressões de cada
+# valor de p
+
 tbl_result <- tibble(
   p=1:30,
   mse=as.double(1:30)
 )
 
-
+# Calculando erro quadrático médio para cada p via leave-one-out
 
 for (p in 1:length(formulas)) {
 
@@ -88,13 +100,20 @@ for (p in 1:length(formulas)) {
   model <- NULL
 
   for (ii in 1:nrow(df)) {
-
+    
+    # Para o p atual, ajusta-se uma regressao retirando cada obs.
+    # ii e utilizando o restante do banco de dados para validarmos
+    # o modelo com a obs. ii retirada
+    
     model <- lm(formulas[[p]], data=df[-ii,])
 
     erros <- c(erros,
                (df[ii,1] - predict(model, df[ii,]))^2)
   }
 
+  # Fazendo a media dos erros dos ajustes para cada uma das observacoes
+  # retiradas
+  
   tbl_result[p,2] <- mean(unlist(erros))
 
 }
