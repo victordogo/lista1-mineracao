@@ -13,7 +13,7 @@ date: "03-07-2022"
 
 knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
                       fig.align="center",
-                      fig.pos = "H", out.width = "65%",
+                      fig.pos = "H", out.width = "80%",
                       error=FALSE)
 ```
 
@@ -149,4 +149,119 @@ tbl_result |>
 
 ```
 
+
+# Item 4
+
+```{r}
+
+cores <- c('p=1'="#F8766D",
+           'p=3'="#00BA38",
+           'p=30'="#619BFF")
+
+df |>
+  ggplot()+
+  aes(x=x,y=y)+
+  geom_point(alpha=0.5)+
+  geom_smooth(aes(color='p=1'),
+              method = 'lm', se=FALSE, formula=formulas[[1]])+
+  geom_smooth(aes(color='p=3'),
+              method = 'lm', se=FALSE, formula=formulas[[3]])+
+  geom_smooth(aes(color='p=30'),
+              method = 'lm', se=FALSE, formula=formulas[[30]])+
+  coord_cartesian(ylim=c(40,90))+
+  theme_minimal()+
+  labs(color='Valor de P',
+       x='PIB per capita normalizado',
+       y='Expectativa de Vida',
+       title='Comparação de modelos para p=1, 3 e 30')
+
+```
+
+# Item 5
+
+```{r, out.width='100%'}
+
+# Criando tabela para armazenar valores preditos
+
+predict_new <- tibble(
+  y = rep(df$y, 3),
+  pred = rep(0, 3*nrow(df)),
+  p_fator = c(rep('p = 1', nrow(df)),
+              rep('p = 3', nrow(df)),
+              rep('p = 30', nrow(df)))
+)
+
+model <- NULL
+
+for (ii in 1:nrow(df)) {
+
+  #p=1
+
+  model <- lm(formulas[[1]], data=df[-ii,]) # Ajuste do modelo sem obs. ii
+
+  predict_new[ii,2] <- predict(model, df[ii,]) # Predizendo obs ii
+
+  #p=3
+
+  model <- lm(formulas[[3]], data=df[-ii,]) # Ajuste do modelo sem obs. ii
+
+  predict_new[ii+211,2] <- predict(model, df[ii,]) # Predizendo obs ii
+
+  #p=30
+
+  model <- lm(formulas[[30]], data=df[-ii,]) # Ajuste do modelo sem obs ii
+
+  predict_new[ii+422,2] <- predict(model, df[ii,]) # Predizendo obs ii
+
+}
+
+library(gridExtra)
+
+# grafico para p = 1
+
+p1 <- predict_new[1:211,] |>
+  ggplot()+
+  aes(x=pred,y=y)+
+  geom_point(color="#F8766D")+
+  geom_abline(intercept =0 , slope = 1, size=1)+
+  coord_cartesian(xlim=c(50,100),
+                  ylim=c(50,100))+
+  theme_minimal()+
+  ggtitle('p = 1')
+
+# grafico para p = 3
+
+p3 <- predict_new[212:422,] |>
+  ggplot()+
+  aes(x=pred,y=y)+
+  geom_point(color="#00BA38")+
+  geom_abline(intercept =0 , slope = 1, size=1)+
+  coord_cartesian(xlim=c(50,100),
+                  ylim=c(50,100))+
+  theme_minimal()+
+  ggtitle('p = 3')
+
+p30 <- predict_new[423:633,] |>
+  ggplot()+
+  aes(x=pred,y=y)+
+  geom_point(color="#619BFF")+
+  geom_abline(intercept =0 , slope = 1, size=1)+
+  coord_cartesian(xlim=c(50,100),
+                  ylim=c(50,100))+
+  theme_minimal()+
+  ggtitle('p = 30')
+
+todos <- predict_new |>
+  ggplot()+
+  aes(x=pred,y=y, color=p_fator)+
+  geom_point()+
+  geom_abline(intercept =0 , slope = 1, size=1)+
+  coord_cartesian(xlim=c(50,100),
+                  ylim=c(50,100))+
+  theme_minimal()+
+  ggtitle('Todos os valores de p')
+
+grid.arrange(p1, p3, p30, todos, ncol=2)
+
+```
 
