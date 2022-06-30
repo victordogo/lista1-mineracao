@@ -1,5 +1,6 @@
 ---
 title: "Lista 1 - Mineração"
+fontsize: 16pt
 author: 
   - "Victor Alves Dogo Martins, RA: 744878"
   - "Ana Beatriz Alves Monteiro, RA: 727838"
@@ -56,6 +57,16 @@ head(df) |>
 ```
 
 # Item 2
+
+Para realizarmos esta etapa da lista, como explicitado no enunciado, utilizaremos o método de validação *leave-one-out cross validation*. Em outras palavras, o estimador do risco será dado por:
+
+$$
+\hat{R}(g) = \frac{1}{n} \cdot \sum_{i=1}^{n} \left( Y_i - g_{-i}(X_i) \right)^2
+$$
+Onde $g_{-i}$ é o modelo ajustado para todas as observações menos a i-ésima delas.
+
+Além disso, para a construção das fórmulas de cada um dos modelos (com $p=1,2, \dots, 30$), foi utilizado o comando `paste()` para que elas não fossem escritas à mão, como foi devidamente anotado no código abaixo:
+
 
 ```{r}
 
@@ -118,9 +129,22 @@ for (p in 1:length(formulas)) {
 
 }
 
+# Mostrando inicio dos erros
+
+head(tbl_result) |> 
+  kable('latex',digits=4, align='cc',
+        caption = 'Primeiras linhas dos riscos estimados para cada p',
+        col.names=c('P', 'MSE')) |> 
+  kable_styling(position="center",
+                latex_options="HOLD_position")
+
 ```
 
+Como pode ser visto acima, o cálculo das estimativas dos riscos procedeu como esperado, com o modelo onde $p=3$ aparentando ser o mais promissor, com pouca diferença do modelo onde $p=5$. A seguir, iremos visualizar graficamente as estimativas de forma a compreender melhor qual dos modelos ajustados foi o melhor.
+
 # Item 3
+
+A seguir, visualizaremos graficamente os riscos estimados para cada um dos modelos ajustados.
 
 ```{r}
 
@@ -149,6 +173,11 @@ tbl_result |>
 
 ```
 
+Através do gráfico do risco estimado vs $p$, é possível visualizarmos como o risco estimado se comporta em função do aumento de parâmetros da função. No primeiro gráfico, observa-se que o risco estimado cresce conforme o $p$ aumenta: esse efeito é dado pelo aumento da variância que ocorre quanto cresce o número de parâmetros da função do modelo. 
+
+Já no segundo gráfico, temos o *zoom* do quadrante onde os valores de p são mais baixos, sendo intuitivo imaginar que o menor erro seria atingido no menor valor de p possível. No entanto, isso não acontece por conta do viés que modelos muito simples podem apresentar. A reta plotada no gráfico nos mostra exatamente isso, sendo possível observar que o ponto de mínimo risco estimado é atingido em $p = 3$, com o erro de 42.9. 
+
+Portanto, através do critério do menor risco estimado possível, temos que $p_esc = 3$.
 
 # Item 4
 
@@ -179,7 +208,11 @@ df |>
 
 # Item 5
 
-```{r, out.width='100%'}
+Agora, iremos calcular os valores preditos para os modelos onde $p=1,3,30$ apenas. Com isso, utilizamos uma `tibble` onde uma coluna corresponde aos valores observados, outra aos valores preditos e uma terceira que corresponde ao modelo ao qual os valores observados e preditos correspondem.
+
+Abaixo, temos os gráficos para todos os modelos separados e juntos:
+
+```{r}
 
 # Criando tabela para armazenar valores preditos
 
@@ -254,14 +287,44 @@ p30 <- predict_new[423:633,] |>
 todos <- predict_new |>
   ggplot()+
   aes(x=pred,y=y, color=p_fator)+
-  geom_point()+
+  geom_point(size=0.5, alpha=0.7)+
   geom_abline(intercept =0 , slope = 1, size=1)+
   coord_cartesian(xlim=c(50,100),
                   ylim=c(50,100))+
   theme_minimal()+
-  ggtitle('Todos os valores de p')
+  labs(color='',
+       title='Todos os valores de p')+
+  theme(legend.position = 'top')
 
-grid.arrange(p1, p3, p30, todos, ncol=2)
+# Mostrando p=1 e p=3
+
+grid.arrange(p1, p3, ncol=2)
+
+# Mostrando p=30 e todos os p
+
+grid.arrange(p30, todos, ncol=2)
 
 ```
 
+Dos três modelos ajustados, aquele que parece mais razoável é o que possui $p = 3$, estando mais próximo possível da linha diagonal em preto. No entanto, vale ressaltarmos que todos os modelos apresentaram desempenho distante do observado para valores preditos aproximadamente menores do que 65. O modelo com o pior desempenho é o que possui $p = 30$. A seguir, veremos as estimativas do risco para estes três modelos para compreendermos de que forma diferem:
+
+
+```{r}
+# Mostrando MSE estimado para p = 1, p = 3 e p = 30
+
+tbl_result[c(1,3,30),] |> 
+  kable('latex',digits=4, align='cc',
+        caption = 'Risco estimado para p=1, p=3 e p=30',
+        col.names=c('P', 'MSE'), format.args = list(scientific = FALSE)) |> 
+  kable_styling(position="center",
+                latex_options="HOLD_position")
+
+```
+
+Podemos ver pela tabela acima que, quando $p=30$, temos o modelo menos razoável. Por outro lado, ainda que a diferença seja relativamente menor, o modelo que possui $p=3$ apresenta desempenho menor tanto pelo risco estimado como pelo gráfico de valores observados vs preditos apresentado anteriormente. 
+
+# Item 6
+
+As vantagens de usarmos validação *leave-one-out* ao invés de *data-splitting* acontecem quando possuímos um banco de dados razoavelmente pequeno, já que retirar uma parte da amostra para realizar a validação via *data-splitting* poderia gerar um prejuízo no ajuste do modelo, também conhecido como *overfitting*. Isto é, o modelo estaria extremamente ajustado aos dados e, por isso, não possuiria um poder alto de predição, já que foram utilizadas poucas observações para sua construção.
+
+Por outro lado, quando possuímos uma quantidade de dados suficiente para um ajuste bom e também para a realização de uma validação via *data-splitting*, é possível evitarmos problemas já citados anteriormente, como o *overfitting*, podendo verificar se o nosso modelo consegue fazer boas previsões.
