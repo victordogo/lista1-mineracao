@@ -181,6 +181,8 @@ Portanto, através do critério do menor risco estimado possível, temos que $p_
 
 # Item 4
 
+Abaixo, segue o gráfico de curvas dos modelos dos três valores de $p$ escolhidos.
+
 ```{r}
 
 cores <- c('p=1'="#F8766D",
@@ -205,6 +207,12 @@ df |>
        title='Comparação de modelos para p=1, 3 e 30')
 
 ```
+
+Pensando na comparação entre as curvas de $p = 1$ e $p = 3$, temos que a primeira parece simples demais para ser utilizada na descrição do comportamento dos dados, apresentando erro relativamente grande tanto no final quanto no início dos dados (isto é, para valores de x próximos de 0 e próximos de 1). Já a segunda, ainda que também erre, aparenta um comportamento que segue melhor o comportamento apresentado no gráfico de dispersão, algo esperado pelo resultado obtido no Item 4 e que nos faz crer que $p = 3$ seja mais razoável.
+
+Em último lugar, temos que a curva $p = 30$ possui alta variância, apresentando um claro comportamento de *overfitting*, quando se ajusta muito bem aos dados apresentados, com a curva passando pela maioria dos pontos, mas que também possui variância alta e poder de predição baixo (algo que também pôde ser visto no Item 4).
+
+Se compararmos com os resultados dos ajustes via polinômios vistos em sala, por exemplo, temos que os valores de $p$ naquele caso trazem o *overfitting* de forma mais lenta (isto é, no exemplo do livro onde $p = 50$, a curva não apresentava comportamento com variância tão alta quanto o que podemos visualizar aqui), surgindo apenas para valores mais altos de $x$. É possível que um ajuste por polinômios traga resultados melhores do que o que foi feito aqui.
 
 # Item 5
 
@@ -306,7 +314,7 @@ grid.arrange(p30, todos, ncol=2)
 
 ```
 
-Dos três modelos ajustados, aquele que parece mais razoável é o que possui $p = 3$, estando mais próximo possível da linha diagonal em preto. No entanto, vale ressaltarmos que todos os modelos apresentaram desempenho distante do observado para valores preditos aproximadamente menores do que 65. O modelo com o pior desempenho é o que possui $p = 30$. A seguir, veremos as estimativas do risco para estes três modelos para compreendermos de que forma diferem:
+Dos três modelos ajustados, aquele que parece mais razoável é o que possui $p = 3$, mas não é possível afirmarmos com toda a certeza isso apenas olhando os gráficos acima (dado que $p = 1$ e $p = 3$ parecem muito semelhantes). Também vale ressaltarmos que todos os modelos apresentaram desempenho distante do observado para valores preditos aproximadamente menores do que 65. O modelo com o pior desempenho é o que possui $p = 30$. A seguir, veremos as estimativas do risco para estes três modelos para compreendermos de que forma diferem:
 
 
 ```{r}
