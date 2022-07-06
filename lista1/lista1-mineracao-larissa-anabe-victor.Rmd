@@ -177,7 +177,7 @@ Através do gráfico do risco estimado vs $p$, é possível visualizarmos como o
 
 Já no segundo gráfico, temos o *zoom* do quadrante onde os valores de p são mais baixos, sendo intuitivo imaginar que o menor erro seria atingido no menor valor de p possível. No entanto, isso não acontece por conta do viés que modelos muito simples podem apresentar. A reta plotada no gráfico nos mostra exatamente isso, sendo possível observar que o ponto de mínimo risco estimado é atingido em $p = 3$, com o erro de 42.9. 
 
-Portanto, através do critério do menor risco estimado possível, temos que $p_esc = 3$.
+Portanto, através do critério do menor risco estimado possível, temos que $p_{esc} = 3$.
 
 # Item 4
 
