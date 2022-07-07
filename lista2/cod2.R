@@ -6,19 +6,22 @@ library(tidyverse)
 library(rsample)
 library(glmnet)
 
-df <- as.matrix(ISLR::Carseats)
+df <- ISLR::Carseats
+df$ShelveLoc <- ifelse(df$ShelveLoc=='Bad', as.factor(0),
+                       ifelse(df$ShelveLoc=='Medium',as.factor(1), as.factor(2)))
+df$Urban <- ifelse(df$Urban=='No',as.factor(0),as.factor(1))
+df$US <- ifelse(df$US=='No',as.factor(0),as.factor(1))
+
 
 split <- initial_split(df, prop=0.6)
 
 tre <- training(split)
 tes <- testing(split)
 
-x_tre <- tre[,-1] |>
-  as.matrix()
+x_tre <- tre[,-1] |> as.matrix()
 y_tre <- tre[,1]
 
-x_tes <- tes[,-1] |>
-  as.matrix()
+x_tes <- tes[,-1] |> as.matrix()
 y_tes <- tes[,1]
 
 # ITEM 2
