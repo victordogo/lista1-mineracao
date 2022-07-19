@@ -58,6 +58,18 @@ y_tes <- tes[,1]
 
 # Item 2
 
+Sabendo que a equação do ajuste via lasso é dada por:
+
+$$
+\begin{aligned}
+\arg \min_{\beta} EQM(g_{\beta}) + \lambda \sum_{j=1}^{d} \mid \beta_j \mid
+\end{aligned}
+$$
+
+Se o lambda é igual a zero temos exatamente o estimador de mínimos quadrados, isto é, a penalização de variável não ocorre (beta igual a zero), deixando assim todas as variáveis implementadas no modelo e consequentemente uma alta variância. Em contrapartida, um lambda de valor grande penaliza muito o modelo, e consequentemente aumenta o viés.
+
+Abaixo, seguem os ajustes via mínimos quadrados e via lasso feitos com o auxílio da função glmnet:
+
 ```{r}
 
 # ITEM 2
@@ -131,7 +143,7 @@ ggplot()+
 
 ```
 
-
+Assim, com o auxílio da função "cv.glmnet", podemos escolher um lambda que penalize nossas covariáveis da melhor forma: o lambda escolhido é o "lambda.1se" igual a 0.0778, que mantém o valor absoluto do desvio padrão do risco estimado menor do que 1. Dessa forma, teremos um modelo parcimonioso que não será tão penalizado quanto aquele com o lambda com risco mínimo, mas que possuirá um poder preditivo tão bom quanto, equilibrando o viés e a variância do modelo. Com o valor de lambda escolhido, temos que as variáveis de localização boa e média do produto na prateleira demonstraram valores consideravelmente maiores do que as outras estimativas.
 
 # Item 3
 
@@ -163,7 +175,7 @@ tibble(
 
 ```
 
-Ao comparar as estimativas entre cada método é notável que todos os coeficientes estimados para o Lasso possuem valores inferiores ao do Mínimos Quadrados, os coeficientes via lasso tendem a se aproximar de zero, principalmente as variáveis Education, UrbanYes,
+Ao comparar as estimativas entre cada método é notável que todos os coeficientes estimados para o Lasso possuem valores inferiores ao do Mínimos Quadrados. Os coeficientes via lasso tendem a se aproximar de zero, principalmente as variáveis Education, UrbanYes,
 USYes. 
 
 Para ilustrar melhor os resultados da tabela acima foi utilizado o auxílio dos gráficos de barras horizontais:
@@ -190,7 +202,7 @@ tibble(
 ```
 
 Através das estimativas do Ajuste de Mínimos Quadrados, temos que a boa localização
-do produto é a variável que apresentou a maior estimativa do coeficiente para o modelo e, contribui fortemente para a variável resposta, ou seja,  quanto mais bem alocado estiver o produto nas prateleiras das lojas, mais poder de venda ele tem, em seguida a média localização do produto na prateleira também contribui positivamente  para a venda. Em contra partida a variável que apresentou o menor coeficiente foi a de preço, concluindo que o preço é o fator que menos contribui para a venda das cadeirinhas infantil. População é uma variável neutra (beta estimado igual a zero), o tamanho populacional não aumenta nem diminui a venda do produto.
+do produto é a variável que apresentou a maior estimativa do coeficiente para o modelo e, contribui fortemente para a variável resposta, ou seja,  quanto mais bem alocado estiver o produto nas prateleiras das lojas, mais poder de venda ele tem, em seguida a média localização do produto na prateleira também contribui positivamente  para a venda. Em contrapartida, a variável que apresentou o menor coeficiente foi a de preço, concluindo que o preço é o fator que menos contribui para a venda das cadeirinhas infantis. População é uma variável neutra (beta estimado igual a zero), o tamanho populacional não aumenta nem diminui a venda do produto.
 
 ```{r}
 ## Barras coeficientes lasso
@@ -217,9 +229,6 @@ Para o método Lasso os betas trazem informações equivalentes ao Mínimos Quad
 
 # Item 4
 
-Realizando a verificação utilizando o conjunto de teste percebemos que o modelo de mínimos quadrados apresenta risco inferior ao do lasso. Apresentando portanto, melhores resultados, já que os valores previstos pelo modelo se aproximam mais dos reais. 
-
-Por outro lado é importante ressaltarmos que o intervalo de confiança do lasso possui menor amplitude e limite superior menor do que o de mínimos quadrados.
 ```{r}
 # ITEM 4
 
@@ -251,6 +260,10 @@ tibble(
                 latex_options="HOLD_position")
 
 ```
+
+Realizando a verificação utilizando o conjunto de teste percebemos que o modelo de mínimos quadrados apresenta risco inferior ao do lasso. Apresentando portanto, melhores resultados, já que os valores previstos pelo modelo se aproximam mais dos reais. 
+
+Por outro lado é importante ressaltarmos que o intervalo de confiança do lasso possui menor amplitude e limite superior menor do que o de mínimos quadrados.
 
 
 # Item 5
@@ -372,8 +385,6 @@ tibble(
 
 ```
 
-A princípio, chama a atenção a quantidade de variáveis que foram penalizadas e resultaram em estimativa igual à 0 no caso do ajuste via lasso. Para o ajuste via mínimos quadrados, temos valores muito menores do que os obtidos para quando não consideramos todas as interações duas a duas. Isso indica um possível poder preditivo menor do que anteriormente, já que damos peso igual para todas as covariaveis, sem priorizar as mais importantes para o contexto.
-
 ```{r}
 
 ## Graficos dos coeficientes de minimos quadrados
@@ -395,10 +406,6 @@ tibble(
        subtitle='considerando todas as interações')
 
 ```
-
-Fora isso, temos que a localização boa na estante e lojas localizadas nos EUA foram as variáveis com maiores estimativas, demonstrando serem importantes neste contexto novamente. Além disso, a interação destas duas variáveis também recebem destaque, bem como lojas localizadas em regiões urbanas.
-
-Por fim, vejamos as estimativas dos riscos para os modelos com todas as interações duas a duas:
 
 ```{r}
 
@@ -422,7 +429,11 @@ tibble(
 
 ```
 
-Temos que tanto os intervalos de 95% de confiança como os riscos pontuais estimados encontram-se numa faixa de valores maior. Com isso, a inclusão das interações duas a duas não foi vantajosa nem para o ajuste via lasso, nem para o ajuste via mínimos quadrados.
+A princípio, chama a atenção a quantidade de variáveis que foram penalizadas e resultaram em estimativa igual à 0 no caso do ajuste via lasso. Para o ajuste via mínimos quadrados, temos valores muito menores do que os obtidos para quando não consideramos todas as interações duas a duas. Isso indica um possível poder preditivo menor do que anteriormente, já que damos peso igual para todas as covariaveis, sem priorizar as mais importantes para o contexto.
+
+Fora isso, temos que a localização boa na estante e lojas localizadas nos EUA foram as variáveis com maiores estimativas, demonstrando serem importantes neste contexto novamente. Além disso, a interação destas duas variáveis também recebem destaque, bem como lojas localizadas em regiões urbanas.
+
+Por fim, vejamos as estimativas dos riscos para os modelos com todas as interações duas a duas:
 
 ```{r}
 
@@ -447,5 +458,4 @@ tibble(
 
 ```
 
-
-
+Temos que tanto os intervalos de 95% de confiança como os riscos pontuais estimados encontram-se numa faixa de valores maior. Com isso, a inclusão das interações duas a duas não foi vantajosa nem para o ajuste via lasso, nem para o ajuste via mínimos quadrados.
