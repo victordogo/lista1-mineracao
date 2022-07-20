@@ -1,0 +1,30 @@
+---
+title: "Lista 3 - Mineração"
+author: 
+  - "Victor Alves Dogo Martins, RA: 744878"
+  - "Ana Beatriz Alves Monteiro, RA: 727838"
+  - "Larissa Torres, RA: 631914"
+output: pdf_document
+date: "14-08-2022"
+---
+
+```{r setup, include=FALSE}
+# Opções globais para os chunks de códigos
+
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
+                      fig.align="center",
+                      fig.pos = "H", out.width = "80%",
+                      error=FALSE)
+```
+
+# Item 1
+
+# Item 2
+
+# Item 3
+
+# Item 4
+
+# Item 5
+
+# Item 6
