@@ -17,9 +17,85 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
                       error=FALSE)
 ```
 
-# Item 1
+# Itens 1 e 2
 
-# Item 2
+Para a transformação das variáveis categóricas (`US`, `Urban` e `ShelveLoc`) em dummies, utilizamos a função `model.matrix()`, que as transforma automacitamente e são apresentadas da seguinte maneira:
+
+* **US:** transformada na variável $X_{USYes}$:
+
+$$
+\begin{aligned}
+X_{USYes} = \begin{cases}
+1, \text{caso a loja estiver localizada nos EUA;}\\
+0, \text{caso contrário.}
+            \end{cases}
+\end{aligned}
+$$
+
+* **Urban:** transformada na variável $X_{UrbanYes}$:
+
+$$
+\begin{aligned}
+X_{UrbanYes} = \begin{cases}
+1, \text{caso a loja estiver localizada na zona urbana;}\\
+0, \text{caso contrário.}
+            \end{cases}
+\end{aligned}
+$$
+
+* **ShelveLoc:** transformada nas variáveis $X_{ShelveLocGood}$ $X_{ShelveLocMedium}$:
+
+$$
+\begin{aligned}
+X_{ShelveLocGood} = \begin{cases}
+1, \text{caso o produto tiver localização boa na prateleira;}\\
+0, \text{caso contrário.}
+            \end{cases}
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+X_{ShelveLocMedium} = \begin{cases}
+1, \text{caso o produto tiver localização média (mas não boa) na prateleira;}\\
+0, \text{caso contrário.}
+            \end{cases}
+\end{aligned}
+$$
+
+Por outro lado, como feito na Lista 2, a divisão do banco de dados entre treino e teste foi feita com o auxílio da função `initial_split()` do pacote `{rsample}`:
+
+```{r}
+## Lendo pacotes
+
+set.seed(1)
+
+library(tidyverse)
+library(rsample)
+library(knitr)
+library(kableExtra)
+
+## Lendo Dados
+
+df <- ISLR::Carseats |> 
+  mutate(US=as.factor(US),
+         Urban=as.factor(Urban),
+         ShelveLoc=as.factor(ShelveLoc))
+
+## Divisão entre treino e teste
+
+split <- initial_split(df, prop=0.6)
+
+tre <- training(split)
+tes <- testing(split)
+
+x_tre <- model.matrix(Sales~., tre)
+y_tre <- tre[,1]
+
+x_tes <- model.matrix(Sales~., tes)
+y_tes <- tes[,1]
+
+```
 
 # Item 3
 
