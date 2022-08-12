@@ -128,6 +128,8 @@ y_tes <- tes[,1]
 
 ## KNN
 
+O KNN ou vizinho mais proximo tem como objetivo auxiliar no problema de predição usando classificação. Para isso é calculada a distancia entre a observação a ser predita e seus k vizinhos mais próximos. Isso possibilita que o número de venda de cadeirinhas de determinada obsevação sejá predito usando a proximidade de outras k observações. Sendo assim, um ponto importante é calcular quantos vizinhos são necessários de serem considerados a fim de minimizar o risco estimado. Por isso, realizamos a validação cruzada com o nosso grupo de treino e teste, com código disponibilizado a seguir:
+
 ```{r}
 ### ITEM 3
 
@@ -150,7 +152,11 @@ paste0('O melhor K é: ', ajuste_knn$bestTune)
 
 ```
 
+Com o gráfico acima e o resultado apresentado via função `paste0`, nosso k ótimo é igual a 17. Seguindo a lógica, para encontrar a quantidade de cadeirinhas vendidas de uma nova observação seriam utilizadas 17 vizinhos (observações) para realizar a predição com o meor risco estimado.
+
 ## Floresta Aleatória
+
+Random Forest é um método utilizado para melhorar a predição de uma árvore cujo o método é classificatório e mais simples e sujeito a maiores erros.  Então é realizado o ajuste de diversas árvores sendo que para cada ajuste de árvore ocorre uma aleatorização de escolhas de variáveis disponíveis no banco de danos, o número de variáveis escolhidas é sempre bem menor que o número de variáveis do banco de dados, consequentemente por serem variáveis escolhidas de forma aleatória temos árvores com baixa correlação entre si e gerando predições cada vez melhores.
 
 ```{r}
 ## Floresta Aleatória
@@ -166,12 +172,18 @@ plot(ajuste_flor)
 
 ```
 
+Após realizar o ajuste temos a função de risco, note que o erro cai rapidamente a medida que vamos aumentando o número de árvores geradas, e se estabiliza a partir de 200 árvores geradas, isso acontece porque a medida que aumentamos o número de árvores aumentamos a correlação dos dados, praticamente alguns sorteios podem acabar se repetindo, isso acontece mais rapidamente principalmente quando temos poucas variáveis disponíveis.
+
+Para mensurar o nível de importância, podemos observar o quando o risco estimado diminuí ao adicionar uma variável específica.
+
 ```{r}
 # Importancia 
 
 varImpPlot(ajuste_flor)
 
 ```
+
+Acima, temos que as variáveis que mais discriminam a variável resposta, ou seja, de maiores níveis de significância é, o preço e a boa localização: ao adicionar uma dessas duas variáveis no “crescimento” da árvore ou na sua composição, temos riscos menores.
 
 ## Árvore de Regressão
 
@@ -577,6 +589,16 @@ Assim como anteriormente, o ajuste com melhor desempenho preditivo foi o feito v
 
 # Item 6
 
+Os gráficos PDP (Gráficos de Dependência Parcial) representam de que forma os valores de uma covariável influenciam nas predições, permitindo que nós identifiquemos de que forma modelos do tipo caixa-preta (como é o caso do KNN e das Florestas Aleatórias).
+
+A curva do PDP para uma covariável $i$ é dada por:
+
+$$
+h_i(x) = \frac{1}{n} \sum^{n}_{j-1}g(x_{j'1},...,x_{j'i-1},x,x_{j'i+1}, ..., x_{j'd})
+$$
+
+Abaixo, seguem as curvas de dependência parcial para todas as covariáveis dos dois métodos solicitados no enunciado.
+
 ```{r fig.cap="PDP para variáveis CompPrice (Linha 1) e Income (Linha 2) de florestas aleatórias (Coluna 1) e KNN (Coluna 2)"}
 ### ITEM 6
 
@@ -594,6 +616,8 @@ gridExtra::grid.arrange(flor1, knn1, flor2, knn2, ncol=2)
 
 ```
 
+Acima, temos que em todos os casos as covariáveis apresentam relação crescente positiva, ou seja, as predições crescem à medida que as variáveis 'Income' e 'CompPrice' também crescem. No entanto, para o caso do KNN (na segunda coluna de gráficos), a relação observada apresenta comportamento muito mais próximo do linear do que podemos observar no caso do ajuste via Florestas Aleatórias. No entanto, vale ressaltarmos que isso não significa que o modelo KNN é melhor (algo que pudemos comprovar com os riscos estimados nas questões anteriores).
+
 ```{r fig.cap="PDP para variáveis Advertising (Linha 1) e Population (Linha 2) de florestas aleatórias (Coluna 1) e KNN (Coluna 2)"}
 
 # Graficos de Advertising e Population
@@ -609,6 +633,10 @@ knn4 <- plotPartial(pdp::partial(ajuste_knn, pred.var='Population'))
 gridExtra::grid.arrange(flor3, knn3, flor4, knn4, ncol=2)
 
 ```
+
+Para a variável 'Advertising' em florestas aleatórias é possível notar uma estabilidade a partir dos 15 mil em gastos de publicidade. Enquanto para KNN é uma reta quase que crescente. Em ambos os ajustes, temos que há uma relação crescente positiva entre a variável e as predições de vendas de cadeirinhas
+
+Já observando a população para ambos os casos, há uma queda logo após 300 mil e uma subida perto dos 400 mil. Não existe relação crescente ou decrescente óbvia, com os valores variando ao longo do eixo x correspondente aos valores da variável 'Population'.
 
 ```{r fig.cap="PDP para variáveis Price (Linha 1) e Age (Linha 2) de florestas aleatórias (Coluna 1) e KNN (Coluna 2)"}
 
@@ -626,6 +654,8 @@ gridExtra::grid.arrange(flor5, knn5, flor6, knn6, ncol=2)
 
 ```
 
+Já as variáveis preço e idade apresentam uma relação inversa, a medida que o preço aumenta as vendas caem, e a medida que a idade cresce as vendas também diminuem. Em relação aos dois métodos quando olhamos para preço o gráfico de floresta aleatória apresenta uma constante nos extremos enquanto que o KNN apresenta uma reta praticamente linear. Agora para a variável idade, apresenta algumas pequenas inversões entre queda e aumento para florestas aleatórias, já o KNN apresenta uma linha linear decrescente.
+
 ```{r fig.cap="PDP para variáveis Education (Linha 1) e ShelveLocGood (Linha 2) de florestas aleatórias (Coluna 1) e KNN (Coluna 2)"}
 
 # Gráficos de Education e ShelveLocGood
@@ -641,6 +671,10 @@ knn8 <- plotPartial(pdp::partial(ajuste_knn, pred.var='ShelveLocGood'))
 gridExtra::grid.arrange(flor7, knn7, flor8, knn8, ncol=2)
 
 ```
+
+Na figura acima, temos que a variável 'Education' apresentou relação decrescente em relação às predições da variável 'Sales', ou seja, o ajuste via florestas aleatórias interpreta que as vendas de cadeiras infantis diminuem na medida que os anos de escolaridade aumenta. No caso da variável 'ShelveLocGood', temos uma relação inversa: se a localização nas prateleiras for boa, as vendas aumentam.
+
+Já para o ajuste via KNN, temos que a variável 'Education' não apresenta relação homogênea, com as vendas de carrinhos aumentando e diminuindo, mas principalmente indicando que escolaridades muito baixas e muito altas apresentam padrão de compras parecidos. No caso da variável 'ShelveLocGood', não há nenhuma influência.
 
 ```{r fig.cap="PDP para variáveis ShelveLocMedium (Linha 1) e UrbanYes (Linha 2) de florestas aleatórias (Coluna 1) e KNN (Coluna 2)"}
 
@@ -658,6 +692,10 @@ gridExtra::grid.arrange(flor9, knn9, flor10, knn10, ncol=2)
 
 ```
 
+Para o ajuste via Florestas Aleatórias, temos que a localização nas prateleiras de qualidade média (pela variável 'ShelveLocMedium') faz crescer a predição do número de vendas, bem como, segundo a variável 'UrbanYes' nos indica que o número de vendas cai se uma cidade for de zona urbana.
+
+Já no caso do ajuste via KNN, temos que a localização nas prateleiras de qualidade média faz cair a predição do número de vendas. Da mesma forma, a predição do número de vendas também cai se uma cidade for de zona urbana, segundo o ajuste via KNN. 
+
 ```{r fig.cap="PDP para variável USYes de florestas aleatórias (Coluna 1) e KNN (Coluna 2)"}
 
 # Gráficos de USYes
@@ -670,3 +708,4 @@ gridExtra::grid.arrange(flor11, knn11, ncol=2)
 
 ```
 
+Na variável 'USYes', o comportamento fica oposto para os dois métodos já que na floresta aleatória é crescente e para o KNN é descrescente. Em termos do problema, segundo Florestas Aleatórias, temos que as vendas de cadeirinhas aumentam se uma loja estiver nos EUA, e o contrário no KNN. Isso está relacionado ao fato de estarmos tratando de uma variável categórica e, como o KNN é calculado baseado em distâncias, a tendência é que a predição não seja tão boa. No geral, é interessante confiarmos mais nos comportamentos observados no ajuste via florestas aleatórias dado que este método apresentou menor risco estimado.
