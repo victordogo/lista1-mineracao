@@ -13,6 +13,7 @@ library(rpart)
 library(rpart.plot)
 library(randomForest)
 library(locfit)
+library(pdp)
 
 ## Lendo Dados
 
@@ -47,7 +48,7 @@ ajuste_knn <- train(
 
 plot(ajuste_knn)
 
-ajuste_knn <- knn.reg(train=x_tre, test=x_tes, y=y_tre, k=17)
+# ajuste_knn <- knn.reg(train=x_tre, test=x_tes, y=y_tre, k=15)
 
 # Floresta Aleatória
 
@@ -135,7 +136,7 @@ melhor_h_nw <- function(x_tre, y_tre, seed=1){
 
   # Definindo vetor de h para ser testado
 
-  h <- seq(0.4,10,0.02)
+  h <- seq(0.4,10,0.1)
 
   # Dataframe com resultados
 
@@ -189,9 +190,162 @@ resultados_h |>
        subtitle = 'via validação-cruzada no conjunto de treino')+
   theme_minimal()
 
-ajuste_nw <- nw_func(x_tes, x_tre, y_tre, h=resultados_h$h[1])
+ajuste_nw <- nw_func(x_tes, x_tre, y_tre,
+                     h=resultados_h[resultados_h$risco==min(resultados_h$risco),]$h)
 
 funcao_risco(ajuste_nw, y_tes)
-funcao_risco(ajuste_knn$pred, y_tes)
+funcao_risco(predict(ajuste_knn, x_tes), y_tes)
 funcao_risco(predict(ajuste_flor, x_tes), y_tes)
 funcao_risco(predict(ajuste_arv, data.frame(x_tes)), y_tes)
+
+## ITEM E
+
+set.seed(1999)
+
+# Embaralhando dados
+
+df_k <- df[sample(1:nrow(df)),]
+
+# Separando 5 lotes
+
+size <- round(nrow(df_k)/5)
+
+kfoldlist <- list(
+  df_k[1:size,],
+  df_k[(size+1):(2*size),],
+  df_k[(2*size+1):(3*size),],
+  df_k[(3*size+1):(4*size),],
+  df_k[(4*size+1):(5*size),]
+)
+
+# Calculando risco para cada metodo
+
+result_kfold <- data.frame(
+  `Método`=c('KNN', 'Nadaraya-Watson', 'Árvore de Regressão', 'Floresta Aleatória'),
+  `Risco`=numeric(4)
+)
+
+knn <- numeric(5)
+nw <- numeric(5)
+arv <- numeric(5)
+flor <- numeric(5)
+
+for (ii in 1:5) {
+
+  # Definindo dados de treino e de teste
+
+  df_tre <- do.call(rbind.data.frame, kfoldlist[-ii])
+
+  df_tes <- kfoldlist[[ii]]
+
+  x_tre <- model.matrix(Sales~., df_tre)
+  y_tre <- df_tre[,1]
+
+  x_tes <- model.matrix(Sales~., df_tes)
+  y_tes <- df_tes[,1]
+
+  # Realizando ajustes
+
+  ## KNN
+
+  aj_knn <- train(
+    x=x_tre,
+    y=y_tre,
+    method = 'knn',
+    tuneLength = 20
+  )
+
+  aj_knn <- knn.reg(train=x_tre, test=x_tes, y=y_tre, k=aj_knn$bestTune$k)
+
+  ## Floresta Aleatória
+
+  aj_flor <- randomForest(x=x_tre, y=y_tre, mtry = round(ncol(df)/3),
+                          importance=TRUE)
+
+  ## Árvore de Regressão
+
+  tre_arv <- data.frame(y_tre, x_tre[,-1])
+
+  aj_arv <- rpart(y_tre~., data=tre_arv, method='anova')
+  melhor_cp <- aj_arv$cptable[which.min(aj_arv$cptable[,'xerror']),'CP']
+  aj_arv <- prune(aj_arv, cp=melhor_cp)
+
+  ## Nadaraya Watson
+
+  melhor_h <- melhor_h_nw(x_tre, y_tre, seed=12)
+
+  aj_nw <- nw_func(x_tes, x_tre, y_tre,
+                   h=melhor_h[melhor_h$risco==min(melhor_h$risco),]$h)
+
+  # Calculando risco
+
+  knn[ii] <- funcao_risco(aj_knn$pred, y_tes)$risco
+  nw[ii] <- funcao_risco(aj_nw, y_tes)$risco
+  arv[ii] <- funcao_risco(predict(aj_arv, data.frame(x_tes)), y_tes)$risco
+  flor[ii] <- funcao_risco(predict(aj_flor, x_tes), y_tes)$risco
+
+}
+
+result_kfold[1,2] <- mean(knn)
+result_kfold[2,2] <- mean(nw)
+result_kfold[3,2] <- mean(arv)
+result_kfold[4,2] <- mean(flor)
+
+### ITEM 6
+
+flor1 <- ggplotify::as.ggplot(~partialPlot(ajuste_flor, pred.data=x_tre, x.var='CompPrice'),
+                              scale=0.9)
+knn1 <- plotPartial(pdp::partial(ajuste_knn, pred.var='CompPrice'))
+
+flor2 <- ggplotify::as.ggplot(~partialPlot(ajuste_flor, pred.data=x_tre, x.var='Income'),
+                              scale=0.9)
+knn2 <- plotPartial(pdp::partial(ajuste_knn, pred.var='Income'))
+
+gridExtra::grid.arrange(flor1, knn1, flor2, knn2, ncol=2)
+
+flor3 <- ggplotify::as.ggplot(~partialPlot(ajuste_flor, pred.data=x_tre, x.var='Advertising'),
+                              scale=0.8)
+knn3 <- plotPartial(pdp::partial(ajuste_knn, pred.var='Advertising'))
+
+flor4 <- ggplotify::as.ggplot(~partialPlot(ajuste_flor, pred.data=x_tre, x.var='Population'),
+                              scale=0.8)
+knn4 <- plotPartial(pdp::partial(ajuste_knn, pred.var='Population'))
+
+gridExtra::grid.arrange(flor3, knn3, flor4, knn4, ncol=2)
+
+flor5 <- ggplotify::as.ggplot(~partialPlot(ajuste_flor, pred.data=x_tre, x.var='Price'),
+                              scale=0.8)
+knn5 <- plotPartial(pdp::partial(ajuste_knn, pred.var='Price'))
+
+flor6 <- ggplotify::as.ggplot(~partialPlot(ajuste_flor, pred.data=x_tre, x.var='Age'),
+                              scale=0.8)
+knn6 <- plotPartial(pdp::partial(ajuste_knn, pred.var='Age'))
+
+gridExtra::grid.arrange(flor5, knn5, flor6, knn6, ncol=2)
+
+flor7 <- ggplotify::as.ggplot(~partialPlot(ajuste_flor, pred.data=x_tre, x.var='Education'),
+                              scale=0.8)
+knn7 <- plotPartial(pdp::partial(ajuste_knn, pred.var='Education'))
+
+flor8 <- ggplotify::as.ggplot(~partialPlot(ajuste_flor, pred.data=x_tre,
+                                           x.var='ShelveLocGood'), scale=0.8)
+knn8 <- plotPartial(pdp::partial(ajuste_knn, pred.var='ShelveLocGood'))
+
+gridExtra::grid.arrange(flor7, knn7, flor8, knn8, ncol=2)
+
+flor9 <- ggplotify::as.ggplot(~partialPlot(ajuste_flor, pred.data=x_tre,
+                                           x.var='ShelveLocMedium'), scale=0.8)
+knn9 <- plotPartial(pdp::partial(ajuste_knn, pred.var='ShelveLocMedium'))
+
+flor10 <- ggplotify::as.ggplot(~partialPlot(ajuste_flor, pred.data=x_tre, x.var='UrbanYes'),
+                               scale=0.8)
+knn10 <- plotPartial(pdp::partial(ajuste_knn, pred.var='UrbanYes'))
+
+gridExtra::grid.arrange(flor9, knn9, flor10, knn10, ncol=2)
+
+flor11 <- ggplotify::as.ggplot(~partialPlot(ajuste_flor, pred.data=x_tre, x.var='USYes'),
+                               scale=0.8)
+knn11 <- plotPartial(pdp::partial(ajuste_knn, pred.var='USYes'))
+
+gridExtra::grid.arrange(flor11, knn11, ncol=2)
+
