@@ -25,7 +25,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
 
 # Itens 1 e 2
 
-Para a transformação das variáveis categóricas (`US`, `Urban` e `ShelveLoc`) em dummies, utilizamos a função `model.matrix()`, que as transforma automacitamente e são apresentadas da seguinte maneira:
+Para a transformação das variáveis categóricas (`US`, `Urban` e `ShelveLoc`) em dummies, utilizamos a função `model.matrix()`, que as transforma automaticamente e são apresentadas da seguinte maneira:
 
 * **US:** transformada na variável $X_{USYes}$:
 
@@ -63,7 +63,7 @@ $$
 $$
 \begin{aligned}
 X_{ShelveLocMedium} = \begin{cases}
-1, \text{caso o produto tiver localização média (mas não boa) na prateleira;}\\
+1, \text{caso o produto tiver localização média na prateleira;}\\
 0, \text{caso contrário.}
             \end{cases}
 \end{aligned}
@@ -128,7 +128,7 @@ y_tes <- tes[,1]
 
 ## KNN
 
-O KNN ou vizinho mais proximo tem como objetivo auxiliar no problema de predição usando classificação. Para isso é calculada a distancia entre a observação a ser predita e seus k vizinhos mais próximos. Isso possibilita que o número de venda de cadeirinhas de determinada obsevação sejá predito usando a proximidade de outras k observações. Sendo assim, um ponto importante é calcular quantos vizinhos são necessários de serem considerados a fim de minimizar o risco estimado. Por isso, realizamos a validação cruzada com o nosso grupo de treino e teste, com código disponibilizado a seguir:
+O KNN ou vizinho mais proximo tem como objetivo auxiliar no problema de predição usando classificação. Para isso é calculada a quantidade ótima de agrupamento de k vizinhos mais próximos. Isso possibilita que o número de venda de cadeirinhas de determinada observação seja predito usando a proximidade de outras k observações. Sendo assim, um ponto importante é calcular quantos vizinhos são necessários de serem considerados a fim de minimizar o risco estimado. Por isso, realizamos a validação cruzada dentro de nosso grupo de treino, com código disponibilizado a seguir:
 
 ```{r}
 ### ITEM 3
@@ -152,11 +152,11 @@ paste0('O melhor K é: ', ajuste_knn$bestTune)
 
 ```
 
-Com o gráfico acima e o resultado apresentado via função `paste0`, nosso k ótimo é igual a 17. Seguindo a lógica, para encontrar a quantidade de cadeirinhas vendidas de uma nova observação seriam utilizadas 17 vizinhos (observações) para realizar a predição com o meor risco estimado.
+Com o gráfico acima e o resultado apresentado via função `paste0`, nosso k ótimo é igual a 17. Seguindo a lógica, para encontrar a quantidade de cadeirinhas vendidas de uma nova observação seriam utilizadas 17 vizinhos (observações) para realizar a predição com o melhor risco estimado.
 
-## Floresta Aleatória
+## Florestas Aleatórias
 
-Random Forest é um método utilizado para melhorar a predição de uma árvore cujo o método é classificatório e mais simples e sujeito a maiores erros.  Então é realizado o ajuste de diversas árvores sendo que para cada ajuste de árvore ocorre uma aleatorização de escolhas de variáveis disponíveis no banco de danos, o número de variáveis escolhidas é sempre bem menor que o número de variáveis do banco de dados, consequentemente por serem variáveis escolhidas de forma aleatória temos árvores com baixa correlação entre si e gerando predições cada vez melhores.
+Florestas Aleatórias é um método utilizado para melhorar a predição de uma árvore cujo o método é classificatório, assim sendo mais simples e sujeito a maiores erros.  Com isso, são realizados os ajustes de diversas árvores sendo que, para cada ajuste, escolhe-se aleatoriamente um número de variáveis disponíveis no banco de dados. O número de variáveis escolhidas é sempre menor do que o número de variáveis disponíveis. Por serem escolhidas de forma aleatória, temos árvores com baixa correlação entre si e gerando predições cada vez melhores.
 
 ```{r}
 ## Floresta Aleatória
@@ -172,9 +172,9 @@ plot(ajuste_flor)
 
 ```
 
-Após realizar o ajuste temos a função de risco, note que o erro cai rapidamente a medida que vamos aumentando o número de árvores geradas, e se estabiliza a partir de 200 árvores geradas, isso acontece porque a medida que aumentamos o número de árvores aumentamos a correlação dos dados, praticamente alguns sorteios podem acabar se repetindo, isso acontece mais rapidamente principalmente quando temos poucas variáveis disponíveis.
+Após realizar o ajuste temos a função de risco: note que o erro cai rapidamente a medida que vamos aumentando o número de árvores geradas, estabilizando a partir de 200 árvores geradas. Isso acontece porque, na medida em que aumentamos o número de árvores, aumentamos a correlação dos dados. Alguns sorteios podem acabar se repetindo, acontecendo principalmente quando temos poucas variáveis disponíveis.
 
-Para mensurar o nível de importância, podemos observar o quando o risco estimado diminuí ao adicionar uma variável específica.
+Para mensurar o nível de importância, podemos observar o quanto o risco estimado diminuí ao adicionarmos uma variável específica.
 
 ```{r}
 # Importancia 
@@ -183,11 +183,11 @@ varImpPlot(ajuste_flor)
 
 ```
 
-Acima, temos que as variáveis que mais discriminam a variável resposta, ou seja, de maiores níveis de significância é, o preço e a boa localização: ao adicionar uma dessas duas variáveis no “crescimento” da árvore ou na sua composição, temos riscos menores.
+Acima, temos que as variáveis que mais discriminam a variável resposta, ou seja, de maiores níveis de significância são o preço e a boa localização. Ao adicionarmos uma dessas duas variáveis no “crescimento” da árvore ou na sua composição, temos riscos menores.
 
 ## Árvore de Regressão
 
-A árvore de regressão é um método não paramétrico classificatório que consiste em realizar uma divisão no espaço das covariáveis de acordo com a variável resposta. As condições são chamadas de nós, gerando as folhas, na qual contém a média da variável resposta respectiva a variável preditora contida naquele grupo. 
+A árvore de regressão é um método não paramétrico classificatório que consiste em realizar uma divisão no espaço das covariáveis de acordo com a variável resposta. As condições são chamadas de nós, gerando as folhas que contém a média da variável resposta relacionada à variável preditora contida naquele grupo. 
 
 ```{r}
 
@@ -197,7 +197,7 @@ tre_arv <- data.frame(y_tre, x_tre[,-1])
 
 ```
 
-Com o auxílio da função “rpart” foi gerado a árvore, e para a sua poda foi considerado o melhor cp obtido através do componente “cptable”.  Com a poda da árvore controlamos a variância, o número de observações em cada folha e possíveis Overfitting.
+Com o auxílio da função “rpart” foi gerada a árvore e, para a sua poda, foi considerado o melhor cp obtido através do componente “cptable”.  Com a poda da árvore controlamos a variância, o número de observações em cada folha e possível superajuste.
 
 ```{r}
 
@@ -211,7 +211,7 @@ rpart.plot(ajuste_arv)
 
 ```
 
-Assim, temos a primeira árvore obtida, onde a mais pura quebra é dada pela a variável “Boa localização na prateleira “, sendo que o produto estar em uma boa localização tem uma média de venda de 10 e não estar resulta em uma venda média igual a 6.8. Em seguida a árvore realiza a quebra em mais 6 variáveis distintas, sendo que a primeira folha da esquerda apresenta o pior grupo com uma média de 3.8, e a primeira folha da direita apresenta a melhor média de venda de cadeirinhas, 12. Note que, existem algumas inversões entre o pior e a melhor folha, e junto a isso temos algumas folhas com poucas observações. 
+Assim, temos a primeira árvore obtida, onde a mais pura quebra é dada pela a variável “Boa localização na prateleira “, sendo que o produto estar em uma boa localização tem uma média de venda de 10 e não estar resulta em uma venda média igual a 6.8. Em seguida, a árvore realiza a quebra em mais 6 variáveis distintas, sendo que a primeira folha da esquerda apresenta o pior grupo com uma média de 3.8, e a primeira folha da direita apresenta a melhor média de venda de cadeirinhas igual a 12. Note que existem algumas inversões entre a pior e a melhor folha, e junto a isso temos algumas folhas com poucas observações. 
 
 A poda da árvore pode resultar em quebras melhores, e é o que faremos a seguir:
 
@@ -226,9 +226,9 @@ rpart.plot(ajuste_arv)
 
 ```
 
-Após realizar a poda, temos uma árvore com melhores quebras, uma interpretação mais clara, menos variáveis e melhor ordenação da média de vendas do produto.  
+Após realizarmos a poda, temos uma árvore com melhores quebras, uma interpretação mais clara, menos variáveis e melhor ordenação da média de vendas do produto.  
 
-Foram geradas 8 classificações ordenadas sendo que a pior classificação tem a média igual a 5.1 e a melhor classificação tem a média equivalente a 12. Interpretando em termos do problema, o produto não estar em uma boa localização tem uma média de vendas de 6.8, o que piora essa venda para 6.5 caso o preço for maior ou igual a 95, o nível de propaganda ser maior do que 10 pode impulsionar a média de vendas para 7.5, em contrapartida piorar para 5.9, por fim, o produto ser vendido por mais de 127 despenca a média de vendas para 5.1. A interpretação é análoga para os outros ramos da árvore.
+Foram geradas 8 classificações ordenadas sendo que a pior classificação tem a média igual a 5.1 e a melhor classificação tem a média equivalente a 12. Interpretando em termos do problema, o produto não estar em uma boa localização tem uma média de vendas de 6.8, o que piora essa venda para 6.5 caso o preço for maior ou igual a 95. O investimento em propaganda ser maior do que 10 pode impulsionar a média de vendas para 7.5; em contrapartida, se o investimento em propaganda for menor do que 10, a média piora para 5.9. Por fim, o produto ser vendido por mais de 127 despenca a média de vendas para 5.1. A interpretação é análoga para os outros ramos da árvore.
 
 ## Nadaraya-Watson
 
@@ -243,7 +243,7 @@ Onde $x$ é uma observação do conjunto de teste, $y_i$ é a i-ésima variável
 $$
 w_i(x) = \frac{K(x, x_i)}{\sum_{j=1}^{n} K(x, x_j) }
 $$
-Onde $K$ é a função kernel (em nosso caso, utilizaremos o Kernel Gaussiano), $x_i$ é a i-ésima observação do conjunto de treino e $x$ é uma observação do conjunto de teste. A soma no numerador da gração é a soma dos resultados da função $K$ para todas as observações do treino com a observação nova do teste, funcionando como uma constante de normalização.
+Onde $K$ é a função kernel (em nosso caso, utilizaremos o Kernel Gaussiano), $x_i$ é a i-ésima observação do conjunto de treino e $x$ é uma observação do conjunto de teste. A soma no numerador da fração é a soma dos resultados da função $K$ para todas as observações do treino com a observação nova do teste, funcionando como uma constante de normalização.
 
 A função Kernel Gaussiana é dada por:
 
@@ -442,6 +442,8 @@ ajuste_nw <- nw_func(x_tes, x_tre, y_tre,
 
 # Item 4
 
+Abaixo, utilizaremos a função de risco da forma definida na Lista 2:
+
 ```{r}
 ### ITEM 4
 
@@ -481,7 +483,7 @@ Se comparados aos métodos da lista anterior, apresentam desempenho inferior (MQ
 
 # Item 5
 
-Para este item, procederemos de forma similar ao que foi feito anteriormente, mas realizando validação cruzada e calculando apenas a estimativa pontual do risco para os quatro métodos trabalhados. Isso foi realizado através de um for loop, e os códigos utilizados estão disponibilizados a seguir:
+Para este item, procederemos de forma similar ao que foi feito anteriormente, mas realizando validação cruzada e calculando apenas a estimativa pontual do risco para os quatro métodos trabalhados. Isso foi realizado através de um *loop*, e os códigos utilizados estão disponibilizados a seguir:
 
 ```{r}
 ### ITEM 5
@@ -589,7 +591,7 @@ Assim como anteriormente, o ajuste com melhor desempenho preditivo foi o feito v
 
 # Item 6
 
-Os gráficos PDP (Gráficos de Dependência Parcial) representam de que forma os valores de uma covariável influenciam nas predições, permitindo que nós identifiquemos de que forma modelos do tipo caixa-preta (como é o caso do KNN e das Florestas Aleatórias).
+Os gráficos PDP (Gráficos de Dependência Parcial) representam de que forma os valores de uma covariável influenciam nas predições, permitindo que nós identifiquemos de que forma modelos do tipo caixa-preta (como é o caso do KNN e das Florestas Aleatórias) se comportam.
 
 A curva do PDP para uma covariável $i$ é dada por:
 
@@ -616,7 +618,7 @@ gridExtra::grid.arrange(flor1, knn1, flor2, knn2, ncol=2)
 
 ```
 
-Acima, temos que em todos os casos as covariáveis apresentam relação crescente positiva, ou seja, as predições crescem à medida que as variáveis 'Income' e 'CompPrice' também crescem. No entanto, para o caso do KNN (na segunda coluna de gráficos), a relação observada apresenta comportamento muito mais próximo do linear do que podemos observar no caso do ajuste via Florestas Aleatórias. No entanto, vale ressaltarmos que isso não significa que o modelo KNN é melhor (algo que pudemos comprovar com os riscos estimados nas questões anteriores).
+Acima, temos que em todos os casos as covariáveis apresentam relação crescente positiva, ou seja, as predições crescem à medida que as variáveis 'Income' e 'CompPrice' também crescem. Para o caso do KNN (na segunda coluna de gráficos), a relação observada apresenta comportamento muito mais próximo do linear do que podemos observar no caso do ajuste via Florestas Aleatórias. No entanto, vale ressaltarmos que isso não significa que o modelo KNN é melhor (algo que pudemos comprovar com os riscos estimados nas questões anteriores).
 
 ```{r fig.cap="PDP para variáveis Advertising (Linha 1) e Population (Linha 2) de florestas aleatórias (Coluna 1) e KNN (Coluna 2)"}
 
@@ -634,9 +636,9 @@ gridExtra::grid.arrange(flor3, knn3, flor4, knn4, ncol=2)
 
 ```
 
-Para a variável 'Advertising' em florestas aleatórias é possível notar uma estabilidade a partir dos 15 mil em gastos de publicidade. Enquanto para KNN é uma reta quase que crescente. Em ambos os ajustes, temos que há uma relação crescente positiva entre a variável e as predições de vendas de cadeirinhas
+Para a variável 'Advertising' em Florestas Aleatórias, é possível notar uma estabilidade a partir dos 15 mil em gastos de publicidade. Enquanto que, para KNN, é uma reta quase que perfeitamente linear. Em ambos os ajustes, temos que há uma relação crescente positiva entre a variável e as predições de vendas de cadeirinhas.
 
-Já observando a população para ambos os casos, há uma queda logo após 300 mil e uma subida perto dos 400 mil. Não existe relação crescente ou decrescente óbvia, com os valores variando ao longo do eixo x correspondente aos valores da variável 'Population'.
+Já observando a população para ambos os casos, há uma queda logo após 300 mil e uma subida perto dos 400 mil na predição da variável resposta. Não existe relação crescente ou decrescente óbvia, com observações variando ao longo do eixo x correspondente aos valores da variável 'Population'.
 
 ```{r fig.cap="PDP para variáveis Price (Linha 1) e Age (Linha 2) de florestas aleatórias (Coluna 1) e KNN (Coluna 2)"}
 
@@ -654,7 +656,7 @@ gridExtra::grid.arrange(flor5, knn5, flor6, knn6, ncol=2)
 
 ```
 
-Já as variáveis preço e idade apresentam uma relação inversa, a medida que o preço aumenta as vendas caem, e a medida que a idade cresce as vendas também diminuem. Em relação aos dois métodos quando olhamos para preço o gráfico de floresta aleatória apresenta uma constante nos extremos enquanto que o KNN apresenta uma reta praticamente linear. Agora para a variável idade, apresenta algumas pequenas inversões entre queda e aumento para florestas aleatórias, já o KNN apresenta uma linha linear decrescente.
+Já as variáveis 'Price' e 'Age' apresentam uma relação inversa: à medida que as variáveis aumentam, as predições da variável resposta 'Sales' caem. Em relação aos dois métodos, quando olhamos para preço, o gráfico de Floresta Aleatória apresenta uma constante nos extremos enquanto que o KNN apresenta uma reta praticamente linear. Para a variável 'Age', observam-se algumas pequenas inversões entre queda e aumento para Florestas Aleatórias, já o KNN apresenta uma linha linear decrescente.
 
 ```{r fig.cap="PDP para variáveis Education (Linha 1) e ShelveLocGood (Linha 2) de florestas aleatórias (Coluna 1) e KNN (Coluna 2)"}
 
@@ -672,7 +674,7 @@ gridExtra::grid.arrange(flor7, knn7, flor8, knn8, ncol=2)
 
 ```
 
-Na figura acima, temos que a variável 'Education' apresentou relação decrescente em relação às predições da variável 'Sales', ou seja, o ajuste via florestas aleatórias interpreta que as vendas de cadeiras infantis diminuem na medida que os anos de escolaridade aumenta. No caso da variável 'ShelveLocGood', temos uma relação inversa: se a localização nas prateleiras for boa, as vendas aumentam.
+Na figura acima, temos que a variável 'Education' apresentou relação decrescente em relação às predições da variável 'Sales', ou seja, o ajuste via Florestas Aleatórias interpreta que as vendas de cadeiras infantis diminuem na medida que os anos de escolaridade aumentam. No caso da variável 'ShelveLocGood', temos uma relação inversa: se a localização nas prateleiras for boa, as vendas aumentam.
 
 Já para o ajuste via KNN, temos que a variável 'Education' não apresenta relação homogênea, com as vendas de carrinhos aumentando e diminuindo, mas principalmente indicando que escolaridades muito baixas e muito altas apresentam padrão de compras parecidos. No caso da variável 'ShelveLocGood', não há nenhuma influência.
 
@@ -692,7 +694,7 @@ gridExtra::grid.arrange(flor9, knn9, flor10, knn10, ncol=2)
 
 ```
 
-Para o ajuste via Florestas Aleatórias, temos que a localização nas prateleiras de qualidade média (pela variável 'ShelveLocMedium') faz crescer a predição do número de vendas, bem como, segundo a variável 'UrbanYes' nos indica que o número de vendas cai se uma cidade for de zona urbana.
+Para o ajuste via Florestas Aleatórias, temos que a localização nas prateleiras de qualidade média (pela variável 'ShelveLocMedium') faz crescer a predição do número de vendas, bem como a variável 'UrbanYes' nos indica que o número de vendas cai se uma cidade for de zona urbana.
 
 Já no caso do ajuste via KNN, temos que a localização nas prateleiras de qualidade média faz cair a predição do número de vendas. Da mesma forma, a predição do número de vendas também cai se uma cidade for de zona urbana, segundo o ajuste via KNN. 
 
@@ -708,4 +710,4 @@ gridExtra::grid.arrange(flor11, knn11, ncol=2)
 
 ```
 
-Na variável 'USYes', o comportamento fica oposto para os dois métodos já que na floresta aleatória é crescente e para o KNN é descrescente. Em termos do problema, segundo Florestas Aleatórias, temos que as vendas de cadeirinhas aumentam se uma loja estiver nos EUA, e o contrário no KNN. Isso está relacionado ao fato de estarmos tratando de uma variável categórica e, como o KNN é calculado baseado em distâncias, a tendência é que a predição não seja tão boa. No geral, é interessante confiarmos mais nos comportamentos observados no ajuste via florestas aleatórias dado que este método apresentou menor risco estimado.
+Na variável 'USYes', o comportamento fica oposto para os dois métodos já que, na Floresta Aleatória é crescente e para o KNN é descrescente. Em termos do problema, segundo Florestas Aleatórias, temos que as vendas de cadeirinhas aumentam se uma loja estiver nos EUA, e o contrário no KNN. Isso está relacionado ao fato de estarmos tratando de uma variável categórica e, como o KNN é calculado baseado em distâncias, a tendência é que a predição não seja tão boa. No geral, é interessante confiarmos mais nos comportamentos observados no ajuste via Florestas Aleatórias dado que este método apresentou menor risco estimado.

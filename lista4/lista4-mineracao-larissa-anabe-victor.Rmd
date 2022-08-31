@@ -1,0 +1,244 @@
+---
+title: "Lista 4 - Mineração"
+author: 
+  - "Victor Alves Dogo Martins, RA: 744878"
+  - "Ana Beatriz Alves Monteiro, RA: 727838"
+  - "Larissa Torres, RA: 631914"
+output: pdf_document
+date: "11-09-2022"
+---
+
+```{r setup, include=FALSE}
+# Opções globais para os chunks de códigos
+
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
+                      fig.align="center",
+                      fig.pos = "H", out.width = "80%",
+                      error=FALSE)
+
+```
+
+# Item A
+
+```{r}
+### Carregando pacotes
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(patchwork)
+library(rsample)
+
+### Lendo dados
+
+df <- readr::read_csv('dados_covid.csv') |> 
+  rename(result=1, age_quant=2, hct=3, hgb=4,
+         plat=5, mean_plat=6, rbc=7, lym=8,
+         mchc=9, wbc=10, baso=11, mch=12,
+         eos=13, mcv=14, mono=15, rdw=16)
+
+### ITEM A: estimações de densidade continua das 
+### variaveis divididas por diagnostico
+
+age_quant <- df |> 
+  ggplot()+
+  aes(x=age_quant, fill=result)+
+  geom_density(alpha=0.6)+
+  theme_minimal()+
+  theme(legend.position = 'none')+
+  labs(x='Quantil de Idade', y='Densidade',
+       title='Densidade de age_quant',
+       subtitle = 'agrupada pela variável de resultado')
+
+hct <- df |> 
+  ggplot()+
+  aes(x=hct, fill=result)+
+  geom_density(alpha=0.6)+
+  theme_minimal()+
+  theme(legend.position = 'none')+
+  labs(x='Hematócritos', y='Densidade',
+       title='Densidade de hct',
+       subtitle = 'agrupada pela variável de resultado')
+
+hgb <- df |> 
+  ggplot()+
+  aes(x=hgb, fill=result)+
+  geom_density(alpha=0.6)+
+  theme_minimal()+
+  theme(legend.position = 'none')+
+  labs(x='Hemoglobinas', y='Densidade',
+       title='Densidade de hgb',
+       subtitle = 'agrupada pela variável de resultado')
+
+plat <- df |> 
+  ggplot()+
+  aes(x=plat, fill=result)+
+  geom_density(alpha=0.6)+
+  theme_minimal()+
+  theme(legend.position = 'right')+
+  labs(x='Plaquetas', y='Densidade',
+       title='Densidade de plat',
+       fill='Resultado',
+       subtitle = 'agrupada pela variável de resultado')
+
+(age_quant+hct)/(hgb+plat)
+
+```
+
+```{r}
+
+mean_plat <- df |> 
+  ggplot()+
+  aes(x=mean_plat, fill=result)+
+  geom_density(alpha=0.6)+
+  theme_minimal()+
+  theme(legend.position = 'none')+
+  labs(x='Média de Plaquetas', y='Densidade',
+       title='Densidade de mean_plat',
+       subtitle = 'agrupada pela variável de resultado')
+
+rbc <- df |> 
+  ggplot()+
+  aes(x=rbc, fill=result)+
+  geom_density(alpha=0.6)+
+  theme_minimal()+
+  theme(legend.position = 'none')+
+  labs(x='Células Vermelhas', y='Densidade',
+       title='Densidade de rbc',
+       subtitle = 'agrupada pela variável de resultado')
+
+lym <- df |> 
+  ggplot()+
+  aes(x=lym, fill=result)+
+  geom_density(alpha=0.6)+
+  theme_minimal()+
+  theme(legend.position = 'none')+
+  labs(x='Linfócitos', y='Densidade',
+       title='Densidade de lym',
+       subtitle = 'agrupada pela variável de resultado')
+
+mchc <- df |> 
+  ggplot()+
+  aes(x=mchc, fill=result)+
+  geom_density(alpha=0.6)+
+  theme_minimal()+
+  theme(legend.position = 'right')+
+  labs(x='Concentração Corpuscular Média de Hemoglobina', y='Densidade',
+       title='Densidade de mchc',
+       fill='Resultado',
+       subtitle = 'agrupada pela variável de resultado')
+
+(mean_plat+rbc)/(lym+mchc)
+
+```
+
+```{r}
+
+wbc <- df |> 
+  ggplot()+
+  aes(x=wbc, fill=result)+
+  geom_density(alpha=0.6)+
+  theme_minimal()+
+  theme(legend.position = 'none')+
+  labs(x='Leucócitos', y='Densidade',
+       title='Densidade de wbc',
+       subtitle = 'agrupada pela variável de resultado')
+
+baso <- df |> 
+  ggplot()+
+  aes(x=baso, fill=result)+
+  geom_density(alpha=0.6)+
+  theme_minimal()+
+  theme(legend.position = 'none')+
+  labs(x='Granulócito Basófilo', y='Densidade',
+       title='Densidade de baso',
+       subtitle = 'agrupada pela variável de resultado')
+
+mch <- df |> 
+  ggplot()+
+  aes(x=mch, fill=result)+
+  geom_density(alpha=0.6)+
+  theme_minimal()+
+  theme(legend.position = 'none')+
+  labs(x='Média Corpuscular de Hemoglobina', y='Densidade',
+       title='Densidade de mch',
+       subtitle = 'agrupada pela variável de resultado')
+
+eos <- df |> 
+  ggplot()+
+  aes(x=eos, fill=result)+
+  geom_density(alpha=0.6)+
+  theme_minimal()+
+  theme(legend.position = 'right')+
+  labs(x='Granulócito Eosinófilo', y='Densidade',
+       title='Densidade de eos',
+       fill='Resultado',
+       subtitle = 'agrupada pela variável de resultado')
+
+(wbc+baso)/(mch+eos)
+
+```
+
+```{r}
+
+mcv <- df |> 
+  ggplot()+
+  aes(x=mcv, fill=result)+
+  geom_density(alpha=0.6)+
+  theme_minimal()+
+  theme(legend.position = 'none')+
+  labs(x='Volume Corpuscular Médio', y='Densidade',
+       title='Densidade de mcv',
+       subtitle = 'agrupada pela variável de resultado')
+
+mono <- df |> 
+  ggplot()+
+  aes(x=mono, fill=result)+
+  geom_density(alpha=0.6)+
+  theme_minimal()+
+  theme(legend.position = 'none')+
+  labs(x='Monócitos', y='Densidade',
+       title='Densidade de mono',
+       subtitle = 'agrupada pela variável de resultado')
+
+rdw <- df |> 
+  ggplot()+
+  aes(x=rdw, fill=result)+
+  geom_density(alpha=0.6)+
+  theme_minimal()+
+  theme(legend.position = 'none')+
+  labs(x='Distribuição da Amplitude de Células Vermelhas', y='Densidade',
+       title='Densidade de mch',
+       subtitle = 'agrupada pela variável de resultado')
+
+(mcv+mono)/rdw
+
+```
+
+# Item B
+
+```{r}
+### ITEM B: divisao dos dados
+
+df <- df |> 
+  mutate(result=as.factor(ifelse(result=='negative',0,1)))
+
+set.seed(57)
+
+split <- initial_split(df, prop=0.6)
+
+tre <- training(split)
+tes <- testing(split)
+
+```
+
+
+# Item C
+
+# Item D
+
+# Item E
+
+# Item F
+
+# Item G
