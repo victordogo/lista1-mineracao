@@ -28,6 +28,12 @@ library(knitr)
 library(kableExtra)
 library(patchwork)
 library(rsample)
+library(glmnet)
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+library(neuralnet)
 
 ### Lendo dados
 
@@ -230,12 +236,125 @@ split <- initial_split(df, prop=0.6)
 tre <- training(split)
 tes <- testing(split)
 
+x_tre <- model.matrix(result~., tre)
+y_tre <- pull(tre[,1])
+
+x_tes <- model.matrix(result~., tes)
+y_tes <- pull(tes[,1])
+
 ```
 
 
 # Item C
 
+Plaquetas,
+Média de Plaquetas,
+Idade,
+Leucócitos,
+Eosinófilo,
+Basófilo,
+Média Corpuscular de Hemoglobina,
+Densidade de Mono,
+Volume Corpuscular Médio
+
 # Item D
+
+falar balanceamento
+
+```{r}
+### ITEM D
+
+## Ajuste Lasso
+
+cv_lasso <- cv.glmnet(x_tre, y_tre, alpha=1, family='binomial')
+ajuste_lasso <- glmnet(x_tre, y_tre, alpha=1, lambda = cv_lasso$lambda.1se,
+                       family='binomial')
+
+## Erro x Lambda Lasso
+
+tibble(
+  lambda=cv_lasso$lambda,
+  risco=cv_lasso$cvm
+) |>
+  ggplot()+
+  aes(x=lambda, y=risco)+
+  geom_line()+
+  geom_vline(xintercept = cv_lasso$lambda.1se)+
+  geom_vline(xintercept = cv_lasso$lambda.min)+
+  annotate(geom = 'text', y=0.75, x=0.023,
+           label=paste0('lambda.1se = ', round(ajuste_lasso$lambda,5)))+
+  annotate(geom = 'text', y=0.7, x=0.017,
+           label=paste0('lambda.min = ', round(cv_lasso$lambda.min,5)))+
+  theme_minimal()+
+  labs(title='Risco x Lambda estimado',
+       subtitle = 'com lambda.1se e lambda.min')
+
+```
+
+```{r}
+## Ajuste KNN
+
+# Realizando calculo do melhor K
+
+ajuste_knn <- train(
+  x=x_tre,
+  y=y_tre,
+  method = 'knn',
+  tuneLength = 20
+)
+
+# Plotando grafico de K vs Risco
+
+plot(ajuste_knn)
+
+paste0('O melhor K é: ', ajuste_knn$bestTune)
+
+```
+
+```{r}
+## Arvore de Decisão
+
+tre_arv <- data.frame(y_tre, x_tre[,-1])
+
+ajuste_arv <- rpart(y_tre~., data=tre_arv)
+
+ajuste_arv <- prune(ajuste_arv, cp=0.03)
+
+rpart.plot(ajuste_arv)
+
+```
+
+```{r}
+## Floresta Aleatória
+
+# Realizando Ajuste
+
+ajuste_flor <- randomForest(x=x_tre, y=y_tre, mtry = round(ncol(df)/3),
+                            importance=TRUE)
+
+# Ajuste x Numero de Arvores
+
+plot(ajuste_flor)
+
+```
+
+```{r}
+## Redes Neurais
+
+tre_nn <- tre |> 
+  mutate(
+    across(age_quant:rdw, .fns=scale)
+  )
+
+ajuste_nn <- neuralnet(result~., data=tre_nn, hidden=c(2,2),
+                       linear.output = FALSE, err.fct ='ce',
+                       likelihood = TRUE,
+                       rep=10)
+
+plot(ajuste_nn, rep='best')
+
+```
+
 
 # Item E
 
