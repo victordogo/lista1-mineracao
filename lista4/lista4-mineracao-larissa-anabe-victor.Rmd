@@ -34,6 +34,8 @@ library(rpart)
 library(rpart.plot)
 library(randomForest)
 library(neuralnet)
+library(xgboost)
+library(ROCR)
 
 ### Lendo dados
 
@@ -338,25 +340,180 @@ plot(ajuste_flor)
 
 ```
 
-```{r}
+```{r, results='hide'}
 ## Redes Neurais
 
-tre_nn <- tre |> 
+tre_nn <- tre |>
   mutate(
-    across(age_quant:rdw, .fns=scale)
+    across(age_quant:rdw, .fns=scale),
+    result=as.factor(ifelse(result==0, 'negativo', 'positivo'))
   )
 
-ajuste_nn <- neuralnet(result~., data=tre_nn, hidden=c(2,2),
-                       linear.output = FALSE, err.fct ='ce',
-                       likelihood = TRUE,
-                       rep=10)
+tes_nn <- tes |>
+  mutate(
+    across(age_quant:rdw, .fns=scale),
+    result=as.factor(ifelse(result==0, 'negativo', 'positivo'))
+  )
 
-plot(ajuste_nn, rep='best')
+nnetGrid <- expand.grid(.size=7,
+                        .decay=c(0,.01,.1,.2,.3,.4,.5,1,2))
+
+ctrl <- trainControl(method='repeatedcv',
+                     repeats=5,
+                     classProbs = TRUE)
+
+ajuste_nn <- train(result~.,
+                 data=tre_nn,
+                 method='nnet',
+                 metric='Accuracy',
+                 tuneGrid=nnetGrid,
+                 trControl=ctrl,
+                 maxit=1000)
+
+plot(ajuste_nn)
+
+```
+```{r, results='hide'}
+## XGBoost
+
+set.seed(57)
+
+dtrain <- xgb.DMatrix(data = as.matrix(tre[,-1]), 
+                      label = (as.numeric(pull(tre[,1]))-1))
+
+dtes <- xgb.DMatrix(data = as.matrix(tes[,-1]), 
+                      label = (as.numeric(pull(tes[,1]))-1))
+
+# Encontrando melhor nrounds
+
+params <- list(booster = "gbtree",
+               objective = "binary:logistic", eta=0.3, gamma=0,
+               max_depth=6, min_child_weight=1, subsample=1,
+               colsample_bytree=1, verbose=0)
+
+xgbcv <- xgb.cv(params = params, data = dtrain, nrounds = 100,
+                          nfold = 5, showsd = T, stratified = T,
+                          print_every_n = 10, early_stopping_rounds = 20,
+                          maximize = F, eval_metric='error')
+
+xgbcv$evaluation_log |> 
+  tibble() |> 
+  ggplot()+
+  aes(x=iter, y=test_error_mean)+
+  geom_line()+
+  annotate('text', x=20, y=0.16, 
+           label=paste0('melhor iteracao: ', xgbcv$best_iteration))+
+  theme_minimal()+
+  labs(x='Iteração', y='Erro Médio no Treino',
+       title = 'Iteração x Erro Médio no Treino',
+       subtitle = 'no ajuste via XGBoost para nº de iterações')
+
+# Encontrando melhor eta
+
+eta <- seq(0,20,0.1)
+conv_eta <-  data.frame(eta, error=numeric(length(eta)))
+for(i in 1:length(eta)){
+  set.seed(57)
+  params=list(booster='gbtree', eta = eta[i], colsample_bytree=1,
+              subsample = 1, max_depth = 6, verbose=0,
+              objective='binary:logistic', gamma=0, eval.metric='error')
+  xgb=xgboost(data=dtrain, nrounds = 17, params = params)
+  conv_eta[i,2] = xgb$evaluation_log$train_error[17]
+}
+
+```
+
+```{r}
+conv_eta |> 
+  tibble() |> 
+  ggplot()+
+  aes(x=eta,y=error)+
+  geom_line()+
+  annotate('text', x=10, y=0.4, label=paste0('melhor eta: ',
+                                             conv_eta[conv_eta$error==min(conv_eta$error),]$eta[1]))+
+  theme_minimal()+
+  labs(x='Eta', y='Erro Médio no Teste',
+       title='Iteração x Erro Médio no Treino',
+       subtitle='no ajuste via XGBoost para eta')
+  
+```
+
+```{r}
+# Ajustando modelo final
+
+set.seed(57)
+
+params <- list(booster='gbtree', eta = 0.4, colsample_bytree=1,
+              subsample = 1, max_depth = 6,
+              objective='binary:logistic', gamma=0, eval.metric='error')
+
+ajuste_xgb <- xgboost(data=dtrain, nrounds = 17, params = params)
 
 ```
 
 
 # Item E
+
+```{r}
+### ITEM E
+
+## Calculando Preditos
+
+pred_lasso <- predict(ajuste_lasso, x_tes, type='response') |> c()
+
+pred_knn <- predict(ajuste_knn, x_tes, type='prob')[,2] |> c()
+
+pred_arv <- predict(ajuste_arv, tes, type='prob')[,2] |> 
+  c()
+
+pred_flor <- predict(ajuste_flor, x_tes, type='prob')[,2] |> 
+  c()
+
+pred_nn <- predict(ajuste_nn, tes_nn, type='prob')[,2] |> 
+  c()
+
+pred_xgb <- predict(ajuste_xgb, dtes, type='prob')
+
+pred_list <- list(lasso=pred_lasso, knn=pred_knn,
+                  arv=pred_arv, flor=pred_flor,
+                  nn=pred_nn, xgb=pred_xgb)
+
+## Calculando
+
+data_result <- list(
+  x=NULL,
+  y=NULL,
+  method=NULL
+)
+
+for (ii in 1:length(pred_list)) {
+  pred <- prediction(pred_list[[ii]], tes$result)
+  perf <- performance(pred,"sens","spec")
+  
+  x_val <- unlist(perf@x.values)
+  y_val <- unlist(perf@y.values)
+  
+  data_result$x <- append(data_result$x, x_val)
+  data_result$y <- append(data_result$y, y_val)
+  data_result$method <- append(data_result$method,
+                               rep(names(pred_list)[ii],
+                                length(x_val)))
+}
+
+data_result |> 
+  data.frame() |> tibble() |> 
+  ggplot()+
+  aes(x=1-x,y=y, color=method)+
+  geom_line()+
+  theme_minimal()+
+  labs(x='1-Especificidade',
+       y='Sensibilidade',
+       title='Curvas ROC dos modelos ajustados',
+       color='Métodos')+
+  theme(legend.position = 'top')
+
+```
+
 
 # Item F
 
