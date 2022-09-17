@@ -18,9 +18,9 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
 
 ```
 
-# Item A
+# Item A anabe
 
-```{r}
+```{r, fig.cap='Densidade das variáveis agequant, hct, hgb e plat agrupadas por diagnóstico.'}
 ### Carregando pacotes
 
 library(tidyverse)
@@ -37,6 +37,7 @@ library(neuralnet)
 library(xgboost)
 library(ROCR)
 library(Matrix)
+library(pdp)
 
 ### Lendo dados
 
@@ -94,7 +95,7 @@ plat <- df |>
 
 ```
 
-```{r}
+```{r, fig.cap='Densidade das variáveis meanplat, rbc, lym e mchc agrupadas por diagnóstico.'}
 
 mean_plat <- df |> 
   ggplot()+
@@ -141,7 +142,7 @@ mchc <- df |>
 
 ```
 
-```{r}
+```{r, fig.cap='Densidade das variáveis wbc, baso, mch e eos agrupadas por diagnóstico.'}
 
 wbc <- df |> 
   ggplot()+
@@ -188,7 +189,7 @@ eos <- df |>
 
 ```
 
-```{r}
+```{r, fig.cap='Densidade das variáveis mcv, mono e mcg agrupadas por diagnóstico.'}
 
 mcv <- df |> 
   ggplot()+
@@ -224,7 +225,7 @@ rdw <- df |>
 
 ```
 
-# Item B
+# Item B anabe
 
 ```{r}
 ### ITEM B: divisao dos dados
@@ -234,7 +235,7 @@ df <- df |>
 
 set.seed(57)
 
-split <- initial_split(df, prop=0.6)
+split <- initial_split(df, prop=0.6) # proporcao de 0.6 para treino
 
 tre <- training(split)
 tes <- testing(split)
@@ -252,13 +253,13 @@ y_tes <- pull(tes[,1])
 
 Dado que tratamos de uma situação em que o diagnóstico de falso negativo (isto é, dizer que uma pessoa não tem COVID-19 dado que ela tem) é muito mais grave do que o de falso positivo, é de interesse nosso utilizarmos métricas com isto em mente.
 
-Para isso, utilizaremos a **Especificidade** (dos pacientes não doentes, quantos foram corretamente identificados) e o **Valor Preditivo Negativo** (dos pacientes classificados como não doentes, quantos foram corretamente identificados).
+Para isso, utilizaremos a **Sensibilidade** (dos pacientes doentes, quantos foram corretamente identificados) e o **Valor Preditivo Positivo** (dos pacientes classificados como doentes, quantos foram corretamente identificados).
 
-Também apresentaremos a **Acurácia** do modelo (quantas observações foram identificadas corretamente) e a **Sensibilidade** (dos pacientes doentes, quantos foram corretamente identificados). No entanto, o foco da avaliação não será nestas duas e sim nas outras duas citadas anteriormente, que identificam da melhor forma se o diagnóstico de COVID-19 positivo está sendo realizado da melhor forma (tendo em mente a maior quantidade de observações com COVID-19 negativo).
+Também apresentaremos a **Acurácia** do modelo (quantas observações foram identificadas corretamente) e a **Especificidade** (dos pacientes não doentes, quantos foram corretamente identificados). No entanto, o foco da avaliação não será nestas duas e sim nas outras duas citadas anteriormente, que identificam da melhor forma se o diagnóstico de COVID-19 positivo está sendo realizado da melhor forma (tendo em mente a maior quantidade de observações com COVID-19 negativo).
 
 
 
-# Item D
+# Item D larissa
 
 ```{r}
 ### ITEM D
@@ -276,7 +277,7 @@ df$result |>
 ```
 
 
-```{r}
+```{r, fig.cap='Risco estimado x Lambda para penalização da Regressão Logística via Lasso.'}
 ## Ajuste Lasso
 
 cv_lasso <- cv.glmnet(x_tre, y_tre, alpha=1, family='binomial')
@@ -304,7 +305,7 @@ tibble(
 
 ```
 
-```{r}
+```{r, fig.cap='K x Estimativa de Risco do ajuste via KNN.'}
 ## Ajuste KNN
 
 # Realizando calculo do melhor K
@@ -324,20 +325,25 @@ paste0('O melhor K é: ', ajuste_knn$bestTune)
 
 ```
 
-```{r}
+```{r, fig.cap='Árvore de Decisão ajustada após processo de poda.'}
 ## Arvore de Decisão
 
+# Transformando dados apropriadamente
 tre_arv <- data.frame(y_tre, x_tre[,-1])
 
+
+# Ajustando árvore
 ajuste_arv <- rpart(y_tre~., data=tre_arv)
 
+# Podando ajuste
 ajuste_arv <- prune(ajuste_arv, cp=0.03)
 
+# Árvore resultante
 rpart.plot(ajuste_arv)
 
 ```
 
-```{r}
+```{r, fig.cap='Número de Árvores x Risco dos ajustes via Florestas Aleatórias.'}
 ## Floresta Aleatória
 
 # Realizando Ajuste
@@ -351,9 +357,10 @@ plot(ajuste_flor)
 
 ```
 
-```{r, results='hide'}
+```{r, results='hide', fig.cap='Acurácia x parâmetro Weight Decay dos ajustes via Redes Neurais'}
 ## Redes Neurais
 
+# Adequando dados
 tre_nn <- tre |>
   mutate(
     across(age_quant:rdw, .fns=scale),
@@ -366,12 +373,16 @@ tes_nn <- tes |>
     result=as.factor(ifelse(result==0, 'negativo', 'positivo'))
   )
 
+# Parametros iniciais
 nnetGrid <- expand.grid(.size=7,
                         .decay=c(0,.01,.1,.2,.3,.4,.5,1,2))
+
+# Metodo de validação dentro do treino
 
 ctrl <- trainControl(method='repeatedcv',
                      repeats=5,
                      classProbs = TRUE)
+# Ajustando
 
 ajuste_nn <- train(result~.,
                  data=tre_nn,
@@ -381,11 +392,25 @@ ajuste_nn <- train(result~.,
                  trControl=ctrl,
                  maxit=1000)
 
+# Plotando acurácia vs weigth decay
+
 plot(ajuste_nn)
 
 ```
 
-```{r, results='hide'}
+```{r, fig.cap="Arquitetura Resultante da melhor Rede Neural ajustada."}
+# Plotando arquitetura resultante da rede
+
+devtools::source_url(paste0('https://gist.githubusercontent.com/fawda123/',
+                            '7471137/raw/466c1474d0a505ff0',
+                            '44412703516c34f1a4684a5/nnet_plot_update.r'))
+
+plot(ajuste_nn$finalModel)
+
+```
+
+
+```{r, results='hide', fig.cap='Melhor iteração x Erro médio dos ajustes via XGBoost.'}
 ## XGBoost
 
 set.seed(57)
@@ -440,7 +465,7 @@ for(i in 1:length(eta)){
 
 ```
 
-```{r}
+```{r, fig.cap='Apresentação do melhor eta encontrado via validação cruzada no treino para ajuste via XGBoost.'}
 conv_eta |> 
   tibble() |> 
   ggplot()+
@@ -471,7 +496,16 @@ ajuste_xgb <- xgboost(data=X.dgCMatrix, nrounds = 17, params = params,
 
 # Item E
 
-```{r}
+Para construírmos a avaliação dos modelos ajustados via Curva ROC, fizemos:
+
+1. O cálculo das probabilidades de COVID-19 positiva preditas para cada uma das observações do conjunto de teste;
+2. Com o auxílio do pacote `{ROCR}`, computamos os valores da Curva ROC de cada um dos métodos;
+3. Juntamos todas as curvas dos seis ajustes num gráfico só;
+4. Calculamos, via distância euclidiana, qual ponto em cada uma das curvas está mais próximo do modelo perfeito (quanto Sensibilidade=1-Especificidade=1). O corte de probabilidade a ser utilizado para estes casos é a projeção destes pontos no Eixo X.
+
+Os resultados obtidos, bem como o código utilizado, seguem abaixo.
+
+```{r, fig.cap='Curva ROC dos modelos ajustados com projeção de pontos mais próximos do modelo perfeito.'}
 ### ITEM E
 
 ## Calculando Preditos
@@ -558,7 +592,174 @@ data_result |>
 
 ```
 
+No geral, temos que o ajuste via Regressão Logística com penalização Lasso demonstra melhor desempenho, já que sua curva (em azul claro) permanece mais próxima do ideal por mais tempo do que as outras. Depois deste ajuste, os ajustes via Florestas Aleatórias (em bege/marrom) e Redes Neurais (em azul escuro) parecem apresentar desempenho interessante.
+
+Além disso, com as projeções, temos que:
+
+* O corte de probabilidade no classificador de bayes para o ajuste via Regressão Logística com penalização lasso será de 0.16;
+* O corte de probabilidade no classificador de bayes para o ajuste via KNN será de 0.28;
+* O corte de probabilidade no classificador de bayes para o ajuste via Árvore de Classificação será de 0.13;
+* O corte de probabilidade no classificador de bayes para o ajuste via Florestas Aleatórias será de 0.19;
+* O corte de probabilidade no classificador de bayes para o ajuste via Redes Neurais será de 0.15;
+* O corte de probabilidade no classificador de bayes para o ajuste via XGBoost será de 0.2.
 
 # Item F
 
-# Item G
+Como dito no Item E, determinamos os cortes de probabilidade com base nos pontos mais próximos (através do cálculo da distância euclidiana) do modelo ideal. Assim, iremos classificar as observações, utilizando um corte $p$, utilizando o Classificador de Bayes:
+
+$$
+g(x) = 1 \Leftrightarrow \mathbb{P}(Y=1|x) \geq p
+$$
+
+Ou seja, classificamos a observação como COVID-19 positiva se a probabilidade de que $Y$ seja igual a 1 for maior do que o corte definido para o ajuste. Vale lembrarmos do que foi respondido no Item C: julgamos que as métricas mais importantes são  **Sensibilidade** e o **Valor Preditivo Positivo**. Também consideraremos, ainda que não com a mesma importância, a **Acurácia** e a **Especificidade**.
+
+Os resultados foram obtidos através da função `confusionMatrix()` do pacote `{caret}`, e encontram-se dispostos à seguir:
+
+```{r}
+### ITEM F
+
+# Definindo cortes com base no Item E
+
+cortes <- c(0.16, 0.28, 0.13, 0.19,
+            0.15, 0.2)
+
+class_pred <- list(
+  lasso=NULL,
+  knn=NULL,
+  arv=NULL,
+  flor=NULL,
+  nn=NULL,
+  xgb=NULL
+)
+
+for (ii in 1:length(class_pred)) {
+  
+  # Classificando com base nos cortes
+  class_pred[[ii]] <- ifelse(pred_list[[ii]]>=cortes[ii],1,0)
+  
+}
+
+metric_result <- list(
+  lasso=NULL,
+  knn=NULL,
+  arv=NULL,
+  flor=NULL,
+  nn=NULL,
+  xgb=NULL
+)
+
+tabl <- NULL
+
+for (ii in 1:length(metric_result)) {
+  
+  tabl <- confusionMatrix(data=as.factor(class_pred[[ii]]),
+                          reference = tes$result)
+  
+  metric_result[[ii]] <- c(tabl$byClass[1], tabl$byClass[3], 
+                           tabl$byClass[2], tabl$overall[1])
+  
+}
+
+# Apresentando resultados
+
+data.frame(metric_result) |> 
+  kable('latex', align='ccccccc',
+        caption = 'Métricas dos Modelos Ajustados após definição dos cortes') |> 
+  kable_styling(position="center",
+                latex_options="HOLD_position")
+
+```
+
+O modelo com maior Sensibilidade foi o ajuste via KNN, em que 92.78846% dos pacientes doentes foram identificados corretamente (atingindo um patamar de detecção de COVID-19 muito bom). Seu Valor Preditivo Positivo apresentou o pior valor (91.03774% dos pacientes classificados como doentes foram identificados corretamente). No entanto, sua especificidade deixou a desejar, dectando corretamente apenas 40.635% dos pacientes não doentes.
+
+Outros ajustes apresentam Sensibilidade pior, mas outras métricas maiores (como é o caso da Regressão Logística com Lasso, Árvore de Classificação, entre os outros ajustes). O que mais chama a atenção é o ajuste via XGBoost:
+
+* Sua Sensibilidade possui desempenho similar ao do KNN, identificando corretamente 91.82692% dos pacientes doentes;
+* Todas as outras métricas são maiores do que o ajuste via KNN.
+
+Ainda que a acurácia do modelo ajustado via XGBoost é baixa (identifica corretamente apenas 56.25% dos casos), seria muito mais grave termos uma Sensibilidade ou VPP baixos em detrimento de uma Acurácia alta do que o contrário. Assim, para uma situação prática em que o modelo ajustado influencia diretamente em vidas humanas, é de interesse público que escolhamos o ajuste via XGBoost como aquele que deve ser utilizado para o diagnóstico da COVID-19.
+
+# Item G 
+
+```{r}
+### ITEM G
+
+# Definindo variaveis que iremos utilizar
+
+vars <- c('age_quant', 'plat', 'wbc')
+
+list_graph <- list(
+  age_quant=NULL, plat=NULL, wbc=NULL
+)
+
+# Função para plotagem do pdp do lasso
+
+pred.fun <- function(object, newdata) {
+  mean(predict(object, newx = newdata, 
+               s = cv_lasso$lambda.1se)[, 1L, drop = TRUE])
+}
+
+# Encontrando graficos via for loop
+
+for (ii in 1:length(list_graph)) {
+  
+  lasso <- partial(ajuste_lasso, pred.var = vars[ii], 
+                   pred.fun = pred.fun, train = x_tre) |> 
+    autoplot()+
+    theme_minimal()+
+    labs(title=paste0('lasso - ', vars[ii]))
+  
+  knn <- partial(ajuste_knn, pred.var=vars[ii]) |> 
+    autoplot()+
+    theme_minimal()+
+    labs(title=paste0('knn - ', vars[ii]))
+  
+  arv <- partial(ajuste_arv, pred.var=vars[ii]) |> 
+    autoplot()+
+    theme_minimal()+
+    labs(title=paste0('arv - ', vars[ii]))
+    
+  flor <-  partial(ajuste_flor, pred.var=vars[ii]) |> 
+    autoplot()+
+    theme_minimal()+
+    labs(title=paste0('flor - ', vars[ii]))
+  
+  nn <- partial(ajuste_nn$finalModel, pred.var=vars[ii],
+                train=tre) |> 
+    autoplot()+
+    theme_minimal()+
+    labs(title=paste0('nn - ', vars[ii]))
+  
+  xgb <- partial(ajuste_xgb, pred.var = vars[ii], prob=TRUE,
+                 train=X.dgCMatrix) |> 
+    autoplot()+
+    theme_minimal()+
+    labs(title=paste0('xgb - ', vars[ii]))
+  
+  list_graph[[ii]] <- (lasso+knn+arv)/(flor+nn+xgb)
+  
+}
+
+
+```
+
+```{r, fig.cap="PDPs para os seis modelos ajustados da variável agequant"}
+# Apresentando pdp da var. age_quant
+
+list_graph[[1]]
+
+```
+
+```{r, fig.cap="PDPs para os seis modelos ajustados da variável plat"}
+# Apresentando pdp da var. plat
+
+list_graph[[2]]
+
+```
+
+```{r, fig.cap="PDPs para os seis modelos ajustados da variável wbc"}
+# Apresentando pdp da var. wbc
+
+list_graph[[3]]
+
+```
