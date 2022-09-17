@@ -36,6 +36,7 @@ library(randomForest)
 library(neuralnet)
 library(xgboost)
 library(ROCR)
+library(Matrix)
 
 ### Lendo dados
 
@@ -249,23 +250,33 @@ y_tes <- pull(tes[,1])
 
 # Item C
 
-Plaquetas,
-Média de Plaquetas,
-Idade,
-Leucócitos,
-Eosinófilo,
-Basófilo,
-Média Corpuscular de Hemoglobina,
-Densidade de Mono,
-Volume Corpuscular Médio
+Dado que tratamos de uma situação em que o diagnóstico de falso negativo (isto é, dizer que uma pessoa não tem COVID-19 dado que ela tem) é muito mais grave do que o de falso positivo, é de interesse nosso utilizarmos métricas com isto em mente.
+
+Para isso, utilizaremos a **Especificidade** (dos pacientes não doentes, quantos foram corretamente identificados) e o **Valor Preditivo Negativo** (dos pacientes classificados como não doentes, quantos foram corretamente identificados).
+
+Também apresentaremos a **Acurácia** do modelo (quantas observações foram identificadas corretamente) e a **Sensibilidade** (dos pacientes doentes, quantos foram corretamente identificados). No entanto, o foco da avaliação não será nestas duas e sim nas outras duas citadas anteriormente, que identificam da melhor forma se o diagnóstico de COVID-19 positivo está sendo realizado da melhor forma (tendo em mente a maior quantidade de observações com COVID-19 negativo).
+
+
 
 # Item D
-
-falar balanceamento
 
 ```{r}
 ### ITEM D
 
+## Verificando balanceamento
+
+n <- nrow(df)
+
+df$result |> 
+  table() |> 
+  kable(align = 'cc', col.names = c('result', 'Frequência'),
+        caption = 'Verificação de balanceamento do banco de dados') |> 
+  kable_styling(position="center",
+                latex_options="HOLD_position")
+```
+
+
+```{r}
 ## Ajuste Lasso
 
 cv_lasso <- cv.glmnet(x_tre, y_tre, alpha=1, family='binomial')
@@ -373,10 +384,16 @@ ajuste_nn <- train(result~.,
 plot(ajuste_nn)
 
 ```
+
 ```{r, results='hide'}
 ## XGBoost
 
 set.seed(57)
+
+# Montando dados de treinamento
+X <- subset(tre, select = -result)
+X.dgCMatrix <- as(data.matrix(X), "dgCMatrix")
+y <- ifelse(tre$result == 1, 1, 0)
 
 dtrain <- xgb.DMatrix(data = as.matrix(tre[,-1]), 
                       label = (as.numeric(pull(tre[,1]))-1))
@@ -438,7 +455,7 @@ conv_eta |>
   
 ```
 
-```{r}
+```{r, results='hide'}
 # Ajustando modelo final
 
 set.seed(57)
@@ -447,10 +464,10 @@ params <- list(booster='gbtree', eta = 0.4, colsample_bytree=1,
               subsample = 1, max_depth = 6,
               objective='binary:logistic', gamma=0, eval.metric='error')
 
-ajuste_xgb <- xgboost(data=dtrain, nrounds = 17, params = params)
+ajuste_xgb <- xgboost(data=X.dgCMatrix, nrounds = 17, params = params, 
+                      label = y, save_period = NULL)
 
 ```
-
 
 # Item E
 
@@ -500,17 +517,44 @@ for (ii in 1:length(pred_list)) {
                                 length(x_val)))
 }
 
+data_result <- data_result |> 
+  data.frame() |> tibble()
+
+# Calculando pontos mais prox. do modelo perfeito
+
+euc <- function(a, b) sqrt(sum((a - b)^2))
+
+distancias <- numeric(nrow(data_result))
+
+for (ii in 1:nrow(data_result)) {
+  distancias[ii] <- euc(c(1,1), data_result[ii,-3])
+}
+
+data_result <- data_result |> 
+  mutate(
+    dist=distancias
+  )
+
+mais_prox <- data_result |> 
+  group_by(method) |> 
+  slice_min(order_by = dist)
+
 data_result |> 
-  data.frame() |> tibble() |> 
   ggplot()+
   aes(x=1-x,y=y, color=method)+
   geom_line()+
+  geom_point(data=mais_prox,
+             aes(x=1-x,y=y, color=method))+
+  geom_vline(xintercept = 1-mais_prox$x,
+             alpha=0.25, linetype='dashed')+
   theme_minimal()+
   labs(x='1-Especificidade',
        y='Sensibilidade',
        title='Curvas ROC dos modelos ajustados',
        color='Métodos')+
-  theme(legend.position = 'top')
+  scale_x_continuous(breaks = c(0,0.25,0.5,0.75,1,round(1-mais_prox$x,2)))+
+  theme(legend.position = 'bottom',
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=8))
 
 ```
 
