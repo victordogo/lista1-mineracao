@@ -18,7 +18,9 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
 
 ```
 
-# Item A anabe
+# Item A 
+
+Com os gráficos de estimativas continuas de densidade podemos comparar o comprtamento das variáveis em relação a cada resultado, sendo ele positivo ou negativo para COVID-19.
 
 ```{r, fig.cap='Densidade das variáveis agequant, hct, hgb e plat agrupadas por diagnóstico.'}
 ### Carregando pacotes
@@ -95,6 +97,10 @@ plat <- df |>
 
 ```
 
+
+Para a variável \textit{age_quant}, idade, observamos que o resultado posivivo se concentra nos maiores quantis, enquanto o resultado negativo está mais distribuido. Na variável \textit{htc}, hematócitos, o comportamento dos grupos é bastante parecido com excesão de uma concentração um pouco maior para o resultado positivo de COVID. Para a variável \textit{hgb}, que corresponde as hemoglobinas, em ambos os resultados ela apresenta um formato de sino com média 0 e variância aproximada de 2,5. Na variável \textit{plat}, plaquetas, ambos os grupos possuem formato de sino centrado no 0 e com variância aproximada de 2,5. A densidade de plaquetas do grupo negativo está um pouco mais deslocado para a direita, indicando uma quantidade maior de plaquetas nesse grupo.
+
+
 ```{r, fig.cap='Densidade das variáveis meanplat, rbc, lym e mchc agrupadas por diagnóstico.'}
 
 mean_plat <- df |> 
@@ -141,6 +147,10 @@ mchc <- df |>
 (mean_plat+rbc)/(lym+mchc)
 
 ```
+
+
+Para a variável \textit{mean_plat}, média de plaquetas, ambos os grupos possuem densidades semelhantes centradas em 0 e com variância aproximada de 2, fato que se repete para as variáveis \textit{rcb}, \textit{lym} e \textit{mchc}. Sendo assim, não apresentam grande distinção entre os dois grupos.
+
 
 ```{r, fig.cap='Densidade das variáveis wbc, baso, mch e eos agrupadas por diagnóstico.'}
 
@@ -189,6 +199,10 @@ eos <- df |>
 
 ```
 
+Na variável \textit{wbc}, leucócitos, é possível notar uma diferença maior entre os grupos, de forma que os casos positivos tem uma concentração menor do que os positivos.
+
+Já para as variáveis \textit{baso}, \textit{mch} e \textit{eos},  o comportamento é semelhante para os dois possíveis resultados, ressaltando apenas que para o grupo dos positivos sempre há um pico de concentração maior perto da média.
+
 ```{r, fig.cap='Densidade das variáveis mcv, mono e mcg agrupadas por diagnóstico.'}
 
 mcv <- df |> 
@@ -225,7 +239,13 @@ rdw <- df |>
 
 ```
 
-# Item B anabe
+
+Para as variáveis \textit{mcv} e \textit{mch}, volume corposcular médio e células vermelhas, o comportamento das densidades é semelhante nos dois grupos. Já no caso da variável \textit{mono}, monócitos, o grupo com resultado negativo tem maior concentração em valores menores do que os que testaram positivo.
+
+
+# Item B
+
+Para realizar a separação dos dados entre teste e treino utilizamos a proporção de $60%$ para o treino e $40%$ para o teste.
 
 ```{r}
 ### ITEM B: divisao dos dados
@@ -728,6 +748,8 @@ Ainda que a acurácia do modelo ajustado via XGBoost é baixa (identifica corret
 
 # Item G 
 
+Considerando que possuímos 16 variáveis acreditamos que não traríamos tantas informações relevantes ao comparar todas para cada método. Por isso, fizemos uma seleção considerando as que apresentaram maior distinção no item a, referente aos grupos de resultados (positivo e negativo). Sendo assim, as escolhidas foram \textit{age_quant}, \textit{plat} e \textit{wbc}.
+
 ```{r}
 ### ITEM G
 
@@ -797,12 +819,17 @@ list_graph[[1]]
 
 ```
 
+Para a variável \textit{age_quant} no Lasso ela apresentou uma relação linear com a variável resposta. No Vizinho Mais Próximo e Árvore a relação foi descrescente, ou seja, a variável resposta diminui de acordo com o aumento do quantil da idade. Para Florestas Aleatórias não houve um padrão de comportamento já que a variável resposta aumentou e diminuiu pelo menos três vezes com a mudança do quantil da idade. No caso Redes Neurais, a relação também foi crescente, como no Lasso, porém com crescimento mais veloz da variável resposta e estabilidade perto do quantil 5 da idade. Para o XGBoost também houve crescimento da variável resposta,no entanto perto do quantil 13 da idade veio sua diminuição. 
+
+
 ```{r, fig.cap="PDPs para os seis modelos ajustados da variável plat"}
 # Apresentando pdp da var. plat
 
 list_graph[[2]]
 
 ```
+
+Para a variável \textit{plat} no Lasso, Redes Neurais e XGBoost ela apresentou uma relação decrescente com a variável resposta, sendo nos dois primeiros de forma linear. No Vizinho Mais Próximo e Árvore a relação foi crescente, ou seja, a variável resposta aumentou de acordo com a concentração maior de plaquetas. Para Florestas Aleatórias houve uma relação que crescente até certo ponto e decrescente após.
 
 ```{r, fig.cap="PDPs para os seis modelos ajustados da variável wbc"}
 # Apresentando pdp da var. wbc
