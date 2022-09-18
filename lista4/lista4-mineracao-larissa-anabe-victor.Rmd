@@ -259,7 +259,9 @@ Também apresentaremos a **Acurácia** do modelo (quantas observações foram id
 
 
 
-# Item D larissa
+# Item D
+
+Compreender bem os dados é o primeiro passo para realizar um bom ajuste. Assim, a priori foi verificado o balanceamento do banco de dados, sendo uma etapa importante para compreendermos a incidência dos fatores dentro da variável resposta (e para decidirmos se há a necessidade de uma função de perda distinta ou corte de probabilidade):
 
 ```{r}
 ### ITEM D
@@ -276,6 +278,11 @@ df$result |>
                 latex_options="HOLD_position")
 ```
 
+Através da tabela, temos que a incidência do fator “positive” na variável resposta é de 13,5%, apresentando indícios de desbalanceamento. Esse fato será fundamental para definir o corte dovalores preditos nas próximas etapas da lista.
+
+## Ajuste de Regressão Logística via Lasso
+
+A seguir, iremos ajustar um modelo logístico utilizando penalização via Lasso. Assim, coeficientes com pouca contribuição para a predição serão descartados, havendo uma queda na variância e ganho no viés, a fim de realizar o melhor ajuste de modelo possível.
 
 ```{r, fig.cap='Risco estimado x Lambda para penalização da Regressão Logística via Lasso.'}
 ## Ajuste Lasso
@@ -305,6 +312,12 @@ tibble(
 
 ```
 
+Com o auxílio da função de risco, foram obtido dois valores para a penalização, lambda=0.00681 que corresponde ao lambda que retorna o menor risco possível, e o lambda.1se = 0,03634 (metodologia discutida na Lista 3). Portanto, o modelo logístico via lasso foi ajustado com a penalização do lambda.1se = 0,03634.
+
+## Ajuste via KNN
+
+O algoritmo do KNN, quando a variável resposta é dicotômica, agrupa os k vizinhos mais próximos e prediz o fator com maior prevalência dentro de seu grupo. Abaixo segue o ajuste deste método.
+
 ```{r, fig.cap='K x Estimativa de Risco do ajuste via KNN.'}
 ## Ajuste KNN
 
@@ -325,6 +338,12 @@ paste0('O melhor K é: ', ajuste_knn$bestTune)
 
 ```
 
+Através do gráfico de K vs Risco, temos que o número ótimo de vizinhos para se obter o melhor modelo de classificação é k=25. Com este valor foi realizado o ajuste para o KNN definitivo.
+
+## Ajuste via Árvore de Decisão
+
+A árvore realiza partições das covariáveis de forma que todas as regiões sejam distintas e disjuntas. Para o método de classificação, a resposta dos grupos particionados é a própria proporção da variável resposta das observações contidas nele. Assim foi realizado o ajuste da árvore e a sua poda:
+
 ```{r, fig.cap='Árvore de Decisão ajustada após processo de poda.'}
 ## Arvore de Decisão
 
@@ -343,6 +362,12 @@ rpart.plot(ajuste_arv)
 
 ```
 
+Caso a taxa de “wbc” for maior ou igual a – 0,52, temos aproximadamente 5% de chance do teste ser negativo, contendo 60% da amostra neste grupo; caso contrário, 35% de chance do teste ser positivo. Junto à taxa de “wbc”, indicar “eos” maior ou igual a –0,60 traz 18% de chance do teste ser dado como negativo; caso contrário, há 56% de chance de testar positivo para a doença. Por fim, indivíduos com um quartil de idade menor que 12 tem 31% de chance de não terem COVID enquanto que, ao apresentarem um quartil maior que 12, se tem 74% de chance de ser diagnosticado com COVID-19. O raciocínio é análogo para os demais ramos da árvore.
+
+## Ajuste via Florestas Aleatórias
+
+Florestas ajudam a obter um modelo mais poderoso em relação às árvores, já que temos agora a medida de importância das variáveis que muda à medida que se gera novas árvores a partir do mesmo banco de dados.
+
 ```{r, fig.cap='Número de Árvores x Risco dos ajustes via Florestas Aleatórias.'}
 ## Floresta Aleatória
 
@@ -356,6 +381,12 @@ ajuste_flor <- randomForest(x=x_tre, y=y_tre, mtry = round(ncol(df)/3),
 plot(ajuste_flor)
 
 ```
+
+Com o auxílio do gráfico de erros, temos que o número ótimo de árvores é aproximadamente menor que 20: a partir disso, combinações de árvores vão se repetindo, deixando-as altamente correlacionadas e, com isso, gerando um aumento na variância desnecessário. 
+
+## Ajuste via Redes Neurais
+
+Este método trata-se de um estimador não linear de r(x) que pode ser representado graficamente por uma estrutura. A seguir, ajustamos uma Rede Neural, cuja a função de ativação é a logística e com o pacote `{nnet}`:
 
 ```{r, results='hide', fig.cap='Acurácia x parâmetro Weight Decay dos ajustes via Redes Neurais'}
 ## Redes Neurais
@@ -398,6 +429,8 @@ plot(ajuste_nn)
 
 ```
 
+Temos que para realizar o ajuste, o valor de Weight Decay que retorna a maior acurácia é igual a 0.5. Abaixo, veremos a estrutura desta Rede Neural.
+
 ```{r, fig.cap="Arquitetura Resultante da melhor Rede Neural ajustada."}
 # Plotando arquitetura resultante da rede
 
@@ -409,6 +442,12 @@ plot(ajuste_nn$finalModel)
 
 ```
 
+Na imagem temos a arquitetura da Rede Neural estimada, com apenas uma camada oculta onde foram realizadas as transformações das variáveis afim de chegar numa estimativa da variável resposta.
+
+## Ajuste via XGBoost
+
+A priori vamos observar como o erro médio no treino se comporta à medida que se 
+aumenta o número de iterações do modelo (tratando elas como um tuning parameter):
 
 ```{r, results='hide', fig.cap='Melhor iteração x Erro médio dos ajustes via XGBoost.'}
 ## XGBoost
@@ -465,6 +504,10 @@ for(i in 1:length(eta)){
 
 ```
 
+Temos então que o número ótimo de interação para o ajuste é igual a 17.
+Em seguida iremos fazer o mesmo estudo para o eta, via validação cruzada no conjunto de treino:
+
+
 ```{r, fig.cap='Apresentação do melhor eta encontrado via validação cruzada no treino para ajuste via XGBoost.'}
 conv_eta |> 
   tibble() |> 
@@ -480,6 +523,8 @@ conv_eta |>
   
 ```
 
+Com o auxílio do gráfico, temos que o melhor eta é igual a 0,4. Por fim, temos o ajuste do modelo final:
+
 ```{r, results='hide'}
 # Ajustando modelo final
 
@@ -493,6 +538,8 @@ ajuste_xgb <- xgboost(data=X.dgCMatrix, nrounds = 17, params = params,
                       label = y, save_period = NULL)
 
 ```
+
+Finalmente, temos o ajuste do modelo via XGBoost com o melhor número de interações e o melhor valor de eta com base no que foi estudado em relação ao erro médio obtido no conjunto de treino para os tuning parameters.
 
 # Item E
 
